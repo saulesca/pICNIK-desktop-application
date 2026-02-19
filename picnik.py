@@ -199,8 +199,13 @@ class DataExtraction:
 
         if summary == True:
             #TG visualization
-            fig, axs = plt.subplots(2 , 3,figsize=(18,8))
-            fig.suptitle('Summary of the input data',fontsize=20)
+            plt.rcParams['xtick.labelsize'] = 12
+            plt.rcParams['ytick.labelsize'] = 12
+
+            #fig, axs = plt.subplots(2 , 3,figsize=(18,8))
+            fig, axs = plt.subplots(2 , 3,layout="constrained")
+            
+            fig.suptitle('Summary of the input data',fontsize=18)
             fig.tight_layout()
             # mass% vs time
             for i in range(len(DFlis)):
@@ -208,55 +213,55 @@ class DataExtraction:
                                DFlis[i]['%m'],
                                lw=3,
                                label=rf'$\beta$={Beta[i]:.1f} K/min')
-                axs[0][0].legend(fontsize=14)
-                axs[0][0].set_xlabel('time [min]')
-                axs[0][0].set_ylabel('mass [%]')
+                axs[0][0].legend(fontsize=10)
+                axs[0][0].set_xlabel('time [min]',fontsize=14)
+                axs[0][0].set_ylabel('mass [%]',fontsize=14)
             # mass loss rate vs time
             for i in range(len(DFlis)):
                 axs[0][1].plot(DFlis[i][DFlis[0].columns[0]],
                                DFlis[i]['dw/dt [%/min]'],
                                lw=3,
                                label=rf'$\beta$={Beta[i]:.1f} K/min')
-                axs[0][1].legend(fontsize=14)
-                axs[0][1].set_xlabel('time [min]')
-                axs[0][1].set_ylabel('dw/dt [%/min]')
+                axs[0][1].legend(fontsize=10)
+                axs[0][1].set_xlabel('time [min]',fontsize=14)
+                axs[0][1].set_ylabel('dw/dt [%/min]',fontsize=14)
             # heating rate vs time
             for i in range(len(DFlis)):
                 axs[0][2].plot(DFlis[i][DFlis[0].columns[0]],
                                DFlis[i]['dT/dt'],
                                lw=3,
                                label=rf'$\beta$={Beta[i]:.1f} K/min')
-                axs[0][2].legend(fontsize=14)
-                axs[0][2].set_xlabel('time [min]')
-                axs[0][2].set_ylabel('dT/dt [K/min]')
+                axs[0][2].legend(fontsize=10)
+                axs[0][2].set_xlabel('time [min]',fontsize=14)
+                axs[0][2].set_ylabel('dT/dt [K/min]',fontsize=14)
             # mass% vs temperature
             for i in range(len(DFlis)):
                 axs[1][0].plot(DFlis[i]['Temperature [K]'],
                                DFlis[i]['%m'],
                                lw=3,
                                label=rf'$\beta$={Beta[i]:.1f} K/min')
-                axs[1][0].legend(fontsize=14)
-                axs[1][0].set_xlabel('Temperature [K]')
-                axs[1][0].set_ylabel('mass [%]')
+                axs[1][0].legend(fontsize=10)
+                axs[1][0].set_xlabel('Temperature [K]',fontsize=14)
+                axs[1][0].set_ylabel('mass [%]',fontsize=14)
             # mass loss rate vs temperature
             for i in range(len(DFlis)):
                 axs[1][1].plot(DFlis[i]['Temperature [K]'],
                                DFlis[i]['dw/dt [%/min]'],
                                lw=3,
                                label=rf'$\beta$={Beta[i]:.1f} K/min')
-                axs[1][1].legend(fontsize=14)
-                axs[1][1].set_xlabel('Temperature [K]')
-                axs[1][1].set_ylabel('dw/dt [%/min]')
+                axs[1][1].legend(fontsize=10)
+                axs[1][1].set_xlabel('Temperature [K]',fontsize=14)
+                axs[1][1].set_ylabel('dw/dt [%/min]',fontsize=14)
             # heating rate vs temperature
             for i in range(len(DFlis)):
                 axs[1][2].plot(DFlis[i]['Temperature [K]'],
                                DFlis[i]['dT/dt'],
                                lw=3,
                                label=rf'$\beta$={Beta[i]:.1f} K/min')
-                axs[1][2].legend(fontsize=14)
-                axs[1][2].set_xlabel('Temperature [K]')
-                axs[1][2].set_ylabel('dT/dt [K/min]')
-            plt.show()
+                axs[1][2].legend(fontsize=10)
+                axs[1][2].set_xlabel('Temperature [K]',fontsize=14)
+                axs[1][2].set_ylabel('dT/dt [K/min]',fontsize=14)
+            #plt.show()
         else: pass
         return fig
 #-----------------------------------------------------------------------------------------------------------
