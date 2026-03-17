@@ -36,10 +36,18 @@ class Aplicacion(tk.Tk):
         self.fix_aux_conversion=[]
         self.d_a1=0
         self.p1=0
-        self.aVy=None 
+        self.aVy=None
+        self.method_used=None 
         self.isoTables=None    
         self.resultado=None   
         self.methods=""
+
+        self.compensation_inicio=0
+        self.compensation_error='r_Lin'
+        self.ace=None
+        
+        self.g_a=None
+        
 
 
         # 2. MENÚ (FILES, IMAGES, HELP)
@@ -64,9 +72,15 @@ class Aplicacion(tk.Tk):
             3: [("a1", self.g1), ("a2",self.g2),("a3", self.g3),("a4", self.g4),("a5", self.g5),("a6", self.g6),],
             4: [("help image", self.g4), ("enter initial temperatures", self.input_temp_i),("enter final temperatures", self.input_temp_f)],
             5: [("Conversion", self.conversion)],
-            6: [("input data", self.input_data_isoconversion), ("Isoconversion", self.ver_isoconversion)],
-            7: [("Iso Table", self.ver_table),("export data", self.export_table)],
-            8: [("eee", self.fase_4_graficar), ("fff", self.fase_4_exportar)],
+            6: [("Iso Table", self.ver_table),("export data", self.export_table)],
+            7: [("input data", self.input_data_isoconversion), ("Isoconversion", self.ver_isoconversion)],
+            8: [("input date compensation", self.input_date_compensation), ("ver compensation", self.ver_compensation)],
+            9: [("input date reconstruccion", self.fase_4_graficar), ("ver  reconstruccion", self.fase_4_exportar)],
+            10: [("input prediction", self.fase_4_graficar), ("prediction", self.fase_4_exportar)],
+            11: [("ggg", self.fase_4_graficar), ("hhh", self.fase_4_exportar)],
+            
+            
+            
             
             
         }
@@ -105,8 +119,8 @@ class Aplicacion(tk.Tk):
         
         # --- BOTÓN PARA REGRESAR (Aparece a partir de la Fase 2) ---
         if fase > 1:
-            ttk.Button(self.frame_header, text="<< Anterior", 
-                       command=self.ir_anterior).pack(side="left", padx=5)
+            ttk.Button(self.frame_header, text="<< Previous", 
+                       command=self.go_previous).pack(side="left", padx=5)
 
         # --- BOTONES DE ACCIÓN (Del diccionario) ---
         if fase in self.config_fases:
@@ -115,25 +129,32 @@ class Aplicacion(tk.Tk):
 
         # --- BOTÓN PARA AVANZAR ---
         if fase < len(self.config_fases):
-            ttk.Button(self.frame_header, text="Siguiente Fase >>", 
-                       command=self.ir_siguiente).pack(side="right", padx=5)
+            ttk.Button(self.frame_header, text="Next >>", 
+                       command=self.go_next).pack(side="right", padx=5)
         else:
             # En la última fase, el botón de la derecha permite reiniciar
             ttk.Button(self.frame_header, text="Reiniciar Todo", 
                        command=self.reiniciar).pack(side="right", padx=5)
 
     # --- LÓGICA DE NAVEGACIÓN ---
-    def ir_siguiente(self):
+    
+    #ir siguiente
+    def go_next(self):
         self.fase_actual.set(self.fase_actual.get() + 1)
         self.actualizar_botones()
-
-    def ir_anterior(self):
+    
+    #ir anterior
+    def go_previous(self):
         self.fase_actual.set(self.fase_actual.get() - 1)
         self.actualizar_botones()
 
     def reiniciar(self):
+
         self.fase_actual.set(1)
         self.actualizar_botones()
+        self.fig=None
+        etiqueta = tk.Label(self.frame_grafico, text="Picnik desktop edition",font=("Arial", 34, "bold"))
+        etiqueta.pack(expand=True)
 
 
 
@@ -252,7 +273,7 @@ class Aplicacion(tk.Tk):
             # Es mejor mostrar el error real 'e' para saber qué falló
             messagebox.showerror("Unexpected error", f"Details: {str(e)}")
 
-
+        
 
     #------------transition graphs-------------------------------
 
@@ -269,6 +290,8 @@ class Aplicacion(tk.Tk):
         except Exception as e:
             
             messagebox.showerror("Unexpected error", f"Details: {str(e)}")
+        
+           
 
     def g2(self):
         try:
@@ -284,6 +307,8 @@ class Aplicacion(tk.Tk):
             
             messagebox.showerror("Unexpected error", f"Details: {str(e)}")
 
+           
+
     def g3(self):
         try:
             for widget in self.frame_grafico.winfo_children():
@@ -297,6 +322,8 @@ class Aplicacion(tk.Tk):
         except Exception as e:
             
             messagebox.showerror("Unexpected error", f"Details: {str(e)}")
+
+            
 
     def g4(self):
         try:
@@ -312,6 +339,8 @@ class Aplicacion(tk.Tk):
             
             messagebox.showerror("Unexpected error", f"Details: {str(e)}")
 
+            
+
     def g5(self):
         try:
             for widget in self.frame_grafico.winfo_children():
@@ -325,6 +354,8 @@ class Aplicacion(tk.Tk):
         except Exception as e:
             
             messagebox.showerror("Unexpected error", f"Details: {str(e)}")
+
+            
 
     def g6(self):
         try:
@@ -340,8 +371,8 @@ class Aplicacion(tk.Tk):
             
             messagebox.showerror("Unexpected error", f"Details: {str(e)}")
 
-
-
+        
+    
 
 
 
@@ -472,6 +503,7 @@ class Aplicacion(tk.Tk):
             
             messagebox.showerror("Unexpected error", f"Details: {str(e)}")
 
+        
 
          
     def input_data_isoconversion(self):
@@ -487,7 +519,7 @@ class Aplicacion(tk.Tk):
         tk.Label(ventana_isoconversion, text="d_a = ").pack(pady=5)
         valor_inicio = tk.DoubleVar(value=0.005)
         spinbox_rango = tk.Spinbox(ventana_isoconversion, from_=0, to=0.99, 
-                                increment=0.005, state="readonly", 
+                                increment=0.001, state="readonly", 
                                 textvariable=valor_inicio,font=fuente,fg="black")
         spinbox_rango.pack(pady=5)
 
@@ -541,31 +573,38 @@ class Aplicacion(tk.Tk):
 
         print("-----------------------------------------------------------")
         
-        if self.methods == "aVy":
-            pass
-        elif self.methods == "Vy":
-            pass
-        elif self.methods == "Fr":
-            pass
-        elif self.methods =="KAS":
-            pass
-        elif self.methods =="OFW":
-            pass
-        else:
-            messagebox.showerror("error","choose a method")
-
+        
         try:
             for widget in self.frame_grafico.winfo_children():
                 widget.destroy()
-           
-            self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1) # crear una variable con este valor por default
-           
-            ace = pnk.ActivationEnergy(self.xtr.Beta, self.xtr.T0, self.isoTables)   #falta cambiar esta parte
             
-            self.aVy = ace.aVy((5, 380), var='time', p=self.p1)  #opcion para escojer metodo  de los cinco
-        
-        # Get the figure from Ea_plot()
-            self.fig = ace.Ea_plot()
+            self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1) # crear una variable con este valor por default
+            self.ace = pnk.ActivationEnergy(self.xtr.Beta, self.xtr.T0, self.isoTables)   #falta cambiar esta parte
+             
+           
+            if self.methods == "aVy":
+                self.method_used = self.ace.aVy((5, 380), var='time', p=self.p1)  #opcion para escojer metodo  de los cinco
+            elif self.methods == "Vy":
+                self.method_used = self.ace.Vy((5, 380),method='senum-yang')
+                #me falta especificar la tupla
+            elif self.methods == "Fr":
+                self.method_used =self.ace.Fr()
+            elif self.methods =="KAS":
+                self.method_used = self.ace.KAS()
+            elif self.methods =="OFW":
+                self.method_used = self.ace.OFW()
+            else:
+                messagebox.showerror("error","choose a method")
+
+            #-----------------------------
+            #probando esta linea
+            self.aVy=self.method_used
+            #-----------------------------
+
+
+           
+            # Get the figure from Ea_plot()
+            self.fig = self.ace.Ea_plot()
         
             # Insert the figure into the frame using FigureCanvasTkAgg
             self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame_grafico)
@@ -577,6 +616,8 @@ class Aplicacion(tk.Tk):
             messagebox.showerror("unexpected error")
 
         
+
+        
     def ver_table(self):
         
         try:
@@ -585,7 +626,7 @@ class Aplicacion(tk.Tk):
                 widget.destroy()
 
             # 1. Obtener datos y asegurar que self.isoTables sea un DataFrame
-            resultado = self.xtr.Isoconversion(d_a=self.d_a1)
+            resultado = self.xtr.Isoconversion(d_a=0.005)
             self.resultado=resultado
             # Si es una tupla, extraemos el array
             datos_array = resultado[0] if isinstance(resultado, tuple) else resultado
@@ -605,13 +646,14 @@ class Aplicacion(tk.Tk):
         except Exception as e:
             messagebox.showerror("Error", f"No se pudieron preparar los datos: {e}")
 
+        self.fig=None
+
 
     def export_table(self):
+        self.isoTables = self.xtr.Isoconversion(d_a=0.005) # crear una variable con este valor por default
         print(self.isoTables)
         try:
-            # Según el error shape=(3, 200, 5), tienes 3 bloques de datos.
-            # Basado en tu primer mensaje, intentaremos reconstruir la tabla:
-            
+           
             # Extraemos los componentes de la tupla
             y_values = self.isoTables[0]  # La columna de la izquierda (0.002027...)
             x_values = self.isoTables[1]  # Los datos de las columnas ($\beta$)
@@ -621,13 +663,13 @@ class Aplicacion(tk.Tk):
             df = pd.DataFrame(x_values)
             df.index = y_values
             
-            # Definir encabezados basados en tu ejemplo
+            # Definir encabezados
             df.columns = [
-                "$\beta=$ 2.50 K/min", 
-                "$\beta=$ 5.00 K/min", 
-                "$\beta=$ 10.00 K/min", 
-                "$\beta=$ 15.00 K/min", 
-                "$\beta=$ 20.00 K/min"
+                "β= 2.50 K/min", 
+                "β= 5.00 K/min", 
+                "β= 10.00 K/min", 
+                "β= 15.00 K/min", 
+                "β= 20.00 K/min"
             ]
 
         except Exception as e:
@@ -646,6 +688,131 @@ class Aplicacion(tk.Tk):
         if filepath:
             df.to_csv(filepath, index=True, encoding='utf-8-sig', sep=';')
             print(f"¡Listo! Guardado en: {filepath}")
+
+    def input_date_compensation(self):
+        fuente = ("Helvetica", 12, "bold")
+        
+        ventana_compensation = tk.Toplevel(self)
+        ventana_compensation.title("Ingreso de datos")
+        ventana_compensation.geometry("400x450")
+        ventana_compensation.resizable(False, False)
+
+        # --- Campo 1: d_a ---
+        opciones_beta = []
+        for i in range(self.numero_de_archivos):
+            texto = f"Beta {i} = {self.xtr.Beta[i]:.1f}"
+            opciones_beta.append(texto)
+        
+        # 2. Usamos StringVar porque el Spinbox ahora contiene texto (Beta 0 = ...)
+        valor_texto = tk.StringVar(value=opciones_beta[0])
+        
+        tk.Label(ventana_compensation, text="Seleccione Beta:").pack(pady=5)
+        
+        # 3. Spinbox configurado con el array
+        spinbox_rango = tk.Spinbox(
+            ventana_compensation, 
+            values=opciones_beta, 
+            state="readonly", 
+            textvariable=valor_texto, # Vinculamos la variable
+            font=fuente,
+            fg="black",
+            width=20
+        )
+        spinbox_rango.pack(pady=5)
+
+        # --- Campo 2: Method ---
+        tk.Label(ventana_compensation, text="y = ").pack(pady=5)
+        options = ["r_Lin", "r_NL", "mse_NL"]
+        combo_options = ttk.Combobox(ventana_compensation, values=options, state="readonly")
+        combo_options.set("r_Lin") # Valor por defecto
+        combo_options.pack(pady=5)
+
+        def actualizar_visibilidad(event=None):
+            pass
+        
+        combo_options.bind("<<ComboboxSelected>>", actualizar_visibilidad)
+        actualizar_visibilidad() # Ejecución inicial
+
+
+        # --- Función para guardar los datos ---
+        def guardar_y_cerrar():
+            
+            #----------------------------------------------------------------------------------
+            # Aquí es donde realmente capturamos el valor final antes de cerrar o usar los datos
+            #lo converti a enteros al parecer se capturaba como string
+            self.compensation_inicio = opciones_beta.index(valor_texto.get())
+            self.compensation_error= combo_options.get()
+            #-----------------------------------------------------------------------------------
+
+        
+            print(f"Variables actualizadas: B={self.compensation_inicio}, Linear={self.compensation_error}")
+            ventana_compensation.destroy()
+
+        # --- Botón OK ---
+        button_algo = tk.Button(ventana_compensation, text="Aceptar", command=guardar_y_cerrar)
+        button_algo.pack(side=tk.BOTTOM, pady=20)
+        
+        
+        
+    # the fifth graph is created
+    def ver_compensation(self):
+        
+        #me falta cambiar el 0 y el error_m    
+
+        try:
+            # Limpiar el frame
+            for widget in self.frame_grafico.winfo_children():
+                widget.destroy()
+            
+            compensation = self.ace.compensation_effect(
+                self.compensation_inicio,
+                #----------    revisar el avy que este bien definido   --------
+                #  ------    ver de donde viene checar en ventana principal ---
+                self.aVy[2],
+                self.aVy[3],
+                error_m=self.compensation_error
+            )
+    
+            self.fig = Figure(figsize=(12, 9), dpi=100)
+            ax = self.fig.add_subplot(111)
+            
+            print("__")
+            print(self.ace.compensation_effect( self.compensation_inicio,
+            self.aVy[2],
+            self.aVy[3],
+            error_m=self.compensation_error))
+            print("___")
+            
+            
+            ax.errorbar(
+                self.aVy[0],
+                compensation[0],
+                yerr=compensation[1],
+                fmt='o',
+                color='blue'
+            )
+            ax.set_xlabel(r'$\alpha$')
+            ax.set_ylabel(r'$\ln(A_{\alpha})$')
+            ax.set_title("Compensation Chart")
+            ax.grid(True)
+
+            # Insert the figure into the frame using FigureCanvasTkAgg
+            self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame_grafico)
+            self.canvas.draw()
+            self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=(20, 10))
+          
+            
+    
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudieron preparar los datos: {e}")                
+    
+    
+    def input_prediction(self):
+        pass
+
+    def prediction(self):
+        pass
+
 
     def funcion_guardar_archivos(self): 
         pass

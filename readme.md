@@ -14,7 +14,7 @@ The package has an object oriented interface with two classes:DataExtraction and
 
     create folder with any name you like
 
-    inside the folder follow the instructions    
+    inside the folder follow the instructions
 
     open terminal whithin the created
  folder
