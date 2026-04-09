@@ -20,6 +20,8 @@ import scipy.special     as     sp
 from scipy.stats import linregress, f                                   
 from scipy import integrate
 import seaborn as sns                                        # colors for the plots
+import matplotlib
+matplotlib.use('TkAgg') 
 import matplotlib.pyplot as plt                                         # (4) matplotlib
 plt.rcParams.update({'font.size': 16})
 from matplotlib.figure import Figure
@@ -263,7 +265,7 @@ class DataExtraction:
                 axs[1][2].set_ylabel('dT/dt [K/min]',fontsize=14)
             #plt.show()
         else: pass
-        return fig
+        return fig ,self.Beta, self.T0 
 #-----------------------------------------------------------------------------------------------------------
     def plot_data(self,x_data='time',y_data='TG',x_units='min',y_units='%'):
         """
