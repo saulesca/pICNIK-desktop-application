@@ -26,7 +26,7 @@ from matplotlib.figure import Figure
 
 from picnik_integrator import picnik_integrator as integ                # (*) 
 from rxn_models import rxn_models                                       # (*)
-
+from tkinter import filedialog
 
 """
 For information about the depencies we refer the user to:
@@ -199,8 +199,13 @@ class DataExtraction:
 
         if summary == True:
             #TG visualization
-            fig, axs = plt.subplots(2 , 3,figsize=(18,8))
-            fig.suptitle('Summary of the input data',fontsize=20)
+            plt.rcParams['xtick.labelsize'] = 12
+            plt.rcParams['ytick.labelsize'] = 12
+
+            #fig, axs = plt.subplots(2 , 3,figsize=(18,8))
+            fig, axs = plt.subplots(2 , 3,layout="constrained")
+            
+            fig.suptitle('Summary of the input data',fontsize=18)
             fig.tight_layout()
             # mass% vs time
             for i in range(len(DFlis)):
@@ -208,57 +213,74 @@ class DataExtraction:
                                DFlis[i]['%m'],
                                lw=3,
                                label=rf'$\beta$={Beta[i]:.1f} K/min')
-                axs[0][0].legend(fontsize=14)
-                axs[0][0].set_xlabel('time [min]')
-                axs[0][0].set_ylabel('mass [%]')
+                axs[0][0].legend(fontsize=10)
+                axs[0][0].set_xlabel('time [min]',fontsize=14)
+                axs[0][0].set_ylabel('TG [%]',fontsize=14)   #cambie mass por TG
             # mass loss rate vs time
             for i in range(len(DFlis)):
                 axs[0][1].plot(DFlis[i][DFlis[0].columns[0]],
                                DFlis[i]['dw/dt [%/min]'],
                                lw=3,
                                label=rf'$\beta$={Beta[i]:.1f} K/min')
-                axs[0][1].legend(fontsize=14)
-                axs[0][1].set_xlabel('time [min]')
-                axs[0][1].set_ylabel('dw/dt [%/min]')
+                axs[0][1].legend(fontsize=10)
+                axs[0][1].set_xlabel('time [min]',fontsize=14)
+                axs[0][1].set_ylabel('dw/dt [%/min]',fontsize=14)
             # heating rate vs time
             for i in range(len(DFlis)):
                 axs[0][2].plot(DFlis[i][DFlis[0].columns[0]],
                                DFlis[i]['dT/dt'],
                                lw=3,
                                label=rf'$\beta$={Beta[i]:.1f} K/min')
-                axs[0][2].legend(fontsize=14)
-                axs[0][2].set_xlabel('time [min]')
-                axs[0][2].set_ylabel('dT/dt [K/min]')
+                axs[0][2].legend(fontsize=10)
+                axs[0][2].set_xlabel('time [min]',fontsize=14)
+                axs[0][2].set_ylabel('dT/dt [K/min]',fontsize=14)
             # mass% vs temperature
             for i in range(len(DFlis)):
                 axs[1][0].plot(DFlis[i]['Temperature [K]'],
                                DFlis[i]['%m'],
                                lw=3,
                                label=rf'$\beta$={Beta[i]:.1f} K/min')
-                axs[1][0].legend(fontsize=14)
-                axs[1][0].set_xlabel('Temperature [K]')
-                axs[1][0].set_ylabel('mass [%]')
+                axs[1][0].legend(fontsize=10)
+                axs[1][0].set_xlabel('Temperature [K]',fontsize=14)
+                axs[1][0].set_ylabel('DTG [%]',fontsize=14)  #  cambie mass por TG
             # mass loss rate vs temperature
             for i in range(len(DFlis)):
                 axs[1][1].plot(DFlis[i]['Temperature [K]'],
                                DFlis[i]['dw/dt [%/min]'],
                                lw=3,
                                label=rf'$\beta$={Beta[i]:.1f} K/min')
-                axs[1][1].legend(fontsize=14)
-                axs[1][1].set_xlabel('Temperature [K]')
-                axs[1][1].set_ylabel('dw/dt [%/min]')
+                axs[1][1].legend(fontsize=10)
+                axs[1][1].set_xlabel('Temperature [K]',fontsize=14)
+                axs[1][1].set_ylabel('dw/dt [%/min]',fontsize=14)
             # heating rate vs temperature
             for i in range(len(DFlis)):
                 axs[1][2].plot(DFlis[i]['Temperature [K]'],
                                DFlis[i]['dT/dt'],
                                lw=3,
                                label=rf'$\beta$={Beta[i]:.1f} K/min')
-                axs[1][2].legend(fontsize=14)
-                axs[1][2].set_xlabel('Temperature [K]')
-                axs[1][2].set_ylabel('dT/dt [K/min]')
-            plt.show()
+                axs[1][2].legend(fontsize=10)
+                axs[1][2].set_xlabel('Temperature [K]',fontsize=14)
+                axs[1][2].set_ylabel('dT/dt [K/min]',fontsize=14)
+                
+            #plt.show()
         else: pass
-        return fig
+        """
+        print("-----aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa------")
+        print(DFlis[0].info())
+        print("-----aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa------")
+        print(DFlis[0].head(7))
+        print(DFlis[0].columns)
+        print(DFlis[0]["T (C)"])
+        print("-----------")
+        print(DFlis[0]["T (C)"].max())
+        print(DFlis[0].iloc[:,1].max())
+        print(DFlis[0].iloc[:,4].max)
+        
+        print("-----------")
+        
+        print("-----aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa------")
+        """    
+        return fig ,self.Beta, self.T0,self.DFlis 
 #-----------------------------------------------------------------------------------------------------------
     def plot_data(self,x_data='time',y_data='TG',x_units='min',y_units='%'):
         """
@@ -318,7 +340,7 @@ class DataExtraction:
             ax.plot(DFlis[i][DFlis[i].columns[k]],
                      DFlis[i][DFlis[i].columns[l]],
                      lw=3,
-                     label=r'$\beta$ = '+str(np.round(Beta[i],decimals=1)))
+                     label=r'$\beta$ = '+str(np.round(Beta[i],decimals=1))+' K/min')
 
         ax.set_xlabel(x_data+' ['+x_units+']')
         ax.set_ylabel(y_data+' ['+y_units+']')
@@ -474,21 +496,21 @@ class DataExtraction:
                                   kind='cubic', 
                                   bounds_error=False, 
                                   fill_value="extrapolate")
-            TempAdvIsoDF[rf'$\beta=$ {Beta[i]:.2f} K/min'] = np.round(inter_func(adv_alps), decimals = 4)
+            TempAdvIsoDF[rf'beta = {Beta[i]:.2f} K/min'] = np.round(inter_func(adv_alps), decimals = 4)
 
             inter_func2 = interp1d(alpha[i], 
                                    t[i],
                                    kind='cubic', 
                                    bounds_error=False, 
                                    fill_value="extrapolate")
-            timeAdvIsoDF[rf'$\beta=$ {Beta[i]:.2f} K/min'] = np.round(inter_func2(adv_alps), decimals = 4)
+            timeAdvIsoDF[rf'beta = {Beta[i]:.2f} K/min'] = np.round(inter_func2(adv_alps), decimals = 4)
             
             inter_func3 = interp1d(alpha[i], 
                                    da_dt[i],
                                    kind='cubic', 
                                    bounds_error=False, 
                                    fill_value="extrapolate")
-            diffAdvIsoDF[rf'$\beta=$ {Beta[i]:.2f} K/min'] = np.round(inter_func3(adv_alps), decimals = 4)
+            diffAdvIsoDF[rf'beta = {Beta[i]:.2f} K/min'] = np.round(inter_func3(adv_alps), decimals = 4)
             
             timeAdvIsoDF.index = adv_alps
             TempAdvIsoDF.index = adv_alps
@@ -1597,31 +1619,47 @@ class ActivationEnergy:
             'Vy' : self.E_Vy,
             'aVy': self.E_aVy
         }
-    
+       
+        
+
+        colores = [
+           '#1f77b4',  # azul
+           '#ff7f0e',  # naranja
+           '#2ca02c',  # verde
+           '#d62728',  # rojo
+           '#9467bd']  # morado
+        
+        linestyles = ['-', '--', '-.', ':', (0, (3, 1, 1, 1))]
+        markers = ['o', 's', '^', 'D', 'x']
+
         if errorbar:
-            for m in self.used_methods:
+            for i, m in enumerate(self.used_methods):
                 ax.errorbar(
                     E_dict[m][0],  # alpha
                     E_dict[m][2],  # Ea
                     E_dict[m][3],  # error bars
-                    marker='.',
-                    label=m
+                    marker=markers[i],
+                    label=m,
+                    color=colores[i],
+                    linestyle=linestyles[i],
                 )
         else:
-            for m in self.used_methods:
+            for i, m in enumerate(self.used_methods):
                 ax.plot(
                     E_dict[m][0],  # alpha
                     E_dict[m][2],  # Ea
-                    marker='.',
-                    label=m
+                    marker=markers[i],
+                    label=m,
+                    color=colores[i],
+                    linestyle=linestyles[i],
                 )
-    
+
         # Configurar ejes
         if ylim:
             ax.set_ylim(ylim)
         if xlim:
             ax.set_xlim(xlim)
-    
+
         ax.set_xlabel(r'$\alpha$')
         ax.set_ylabel(r'$E_{\alpha}$')
         ax.legend()
@@ -1665,10 +1703,25 @@ class ActivationEnergy:
                 
             data = {'conversion':E_dict[k][0],
                     'Temperature [K]':E_dict[k][1],
-                    'E [kJ/mol]':E_dict[k][2],
-                    'error [kJ/mol]':E_dict[k][3]}
+                    'E [KJ/mol]':E_dict[k][2],
+                    'error [KJ/mol]':E_dict[k][3]
+                    }
             df = pd.DataFrame(data)
-            df.to_csv(k+'.csv',index=False)
+            
+        ruta= filedialog.asksaveasfilename(
+        title="save file",
+        initialfile=f"{k}.csv",
+        defaultextension=".csv",
+        filetypes=[("files csv", "*.csv")]
+        )
+        
+        if ruta:
+            df.to_csv(ruta, index=False)
+            print(f"save file: {ruta}")
+           
+        else:
+            print("operation cancel.")
+            
         print(f'Done')
 #-----------------------------------------------------------------------------------------------------------
     def j(self,t,Ei,col,row,t_prime,B,isoT=None,T_func=None):
@@ -1805,6 +1858,7 @@ class ActivationEnergy:
         y = Ddf[Ddf.columns[col]].values
         alpha = Tdf.index.values
         
+       
     
         def fit(x, y, f_alpha, alpha, er_m=error_m):
 
@@ -1861,7 +1915,7 @@ class ActivationEnergy:
                             r_sqr += [lr.rvalue ** 2]
                         else:
                             pass
-
+                         
                 return np.array(Afit), np.array(Efit), np.array(r_sqr), model
 
             fr_l  = np.array([0.9999, 0.999, 0.99, 0.95, 0.85])
@@ -1887,7 +1941,7 @@ class ActivationEnergy:
                                 rf'Accuracy not met with precision of mse = {f_mse[k - 1]}. Lowering precision to mse = {f_mse[k]}')
                 else:
                     break
-
+           
             return Afit_t, Efit_t, r_sq_t, mod_t
 
         def regression(E, A):
@@ -1913,6 +1967,8 @@ class ActivationEnergy:
         f_a += filter(callable, list(rxn_models.__dict__.values()))
         Afit, Efit, r_sq, mod = fit(x, y, f_a, alpha, er_m=error_m)
         self.accepted_models = mod
+        
+       
         if Efit.size == 0 or Afit.size == 0:
             print('Compensation effect could not be computed for this data.')
             return None
@@ -1920,7 +1976,7 @@ class ActivationEnergy:
             a, errora, b, errorb = regression(Efit, Afit)
             ln_A = (a * E) + b
             errorlnA = np.sqrt((errora ** 2) + ((E * errorb) ** 2) + ((b * errorE) ** 2))
-
+           
             return ln_A, errorlnA, a, errora, b, errorb, np.array(Afit), np.array(Efit), r_sq, mod
 
     #---------------------------------------------------------------
@@ -1960,7 +2016,7 @@ class ActivationEnergy:
     
         alpha = self.timeAdvIsoDF.index.values[1:]
     
-        color = sns.color_palette("Spectral", len(models))
+        color = sns.color_palette("colorblind", len(models))
     
         # En lugar de usar plt.figure(), usamos la clase Figure
         fig = Figure(figsize=(10, 6))
@@ -2064,7 +2120,20 @@ class ActivationEnergy:
         predDF = pd.DataFrame({'time':time,
                                'Temperature':Temp,
                                'conversion':alpha})
-        predDF.to_csv(name,index=False)
+        ruta= filedialog.asksaveasfilename(
+        title="save file",
+        initialfile="prediction.csv",
+        defaultextension=".csv",
+        filetypes=[("files csv", "*.csv")]
+        )
+        
+        if ruta:
+            predDF.to_csv(ruta, index=False)
+            print(f"save file: {ruta}")
+        else:
+            print("operation cancel.")
+
+        
 #---------------------------------------------------------------
     def export_kinetic_triplet(self, alpha, E, ln_A, g_a, name="kinetic_triplet.csv" ):
         """
@@ -2080,11 +2149,23 @@ class ActivationEnergy:
 
         Returns:    None. A file will be created according to the working path or path specified in `name`.
         """
-        kinDF = pd.DataFrame({r'$\alpha$':alpha,
+        kinDF = pd.DataFrame({'α':alpha,
                               'E':E,
                               'ln_A':ln_A,
                               'g(alpha)':g_a})
-        kinDF.to_csv(name,index=False)
+        
+        ruta= filedialog.asksaveasfilename(
+        title="save file",
+        initialfile="kinectic_triplet.csv",
+        defaultextension=".csv",
+        filetypes=[("files csv", "*.csv")]
+        )
+        
+        if ruta:
+            kinDF.to_csv(ruta, index=False)
+            print(f"save file: {ruta}")
+        else:
+            print("operation cancel.")
 
 
 

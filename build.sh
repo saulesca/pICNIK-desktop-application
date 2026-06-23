@@ -13,11 +13,13 @@ pip install --upgrade pip
 echo "Instalando dependencias..."
 pip install matplotlib numpy pandas scipy seaborn chardet picnik-integrator rxnmodel pyinstaller #despues intentar quitar pillow para si por eso salen ventanas en la aplicacion
 
+pip freeze > requeriments.txt
+
 echo "Limpiando builds anteriores..."
 rm -rf build dist ventana_principal.spec
 
 echo "Compilando con PyInstaller..."
-./venv/bin/pyinstaller --onefile --windowed \
+./venv/bin/pyinstaller --onefile --add-data "tutorial.pdf:." --windowed \
   --collect-all matplotlib \
   --hidden-import=matplotlib.backends.backend_tkagg \
   --hidden-import=seaborn \

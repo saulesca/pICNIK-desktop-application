@@ -1,15 +1,7 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Sep 25 18:02:26 2025
-
-@author: yop1
-"""
 import tkinter as tk
-
 from tkinter import filedialog, messagebox
 from tkinter import ttk
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 import picnik as pnk
 import numpy as np
@@ -17,710 +9,1820 @@ import chardet
 import os
 import sys
 import subprocess
-
-
-root = tk.Tk()
-root.title("picnik")
-root.geometry("800x800")
-
-# global variable declaration
-one_step = []
-fig = None
-canvas = None
-text_help_1=""
-label2=""
-xtr=None
-
-ace=None
-isoTables=None
-aVy= None
-
-g_a=None
-compensation=""
-ap2=None
-Tp2=None
-tp2 =None
-
-x_data_var = tk.StringVar()
-x_unit_var = tk.StringVar()
-y_data_var = tk.StringVar()
-y_unit_var = tk.StringVar()
-
-
-#menu options
-
-main_menu = tk.Menu(root)
-root.config(menu=main_menu)
-
-file=tk.Menu(main_menu,tearoff=0)
-file.add_command(label="open files",command=lambda:open_files())
-file.add_command(label="save files",command=lambda:save_files())
-file.add_separator()
-file.add_command(label="exit",command=lambda:salir())
-
-graph=tk.Menu(main_menu,tearoff=0)
-graph.add_command(label="save graph",command=lambda:save_graph())
-
-help_1=tk.Menu(main_menu,tearoff=0)
-help_1.add_command(label="tutorial",command=lambda:tutorial())
-help_1.add_command(label="about ",command=lambda:about())
-
-main_menu.add_cascade(label="file",menu=file)
-main_menu.add_cascade(label="graph",menu=graph)
-main_menu.add_cascade(label="help",menu=help_1)
-
-
-
-
-#Frame for controls label and buttons
-
-control_frame = tk.Frame(root)
-
-
-control_frame.grid(row=0, column=0, columnspan=4, sticky="ew", padx=10, pady=10)
-
-
-frame = tk.Frame(root, bg="lightgray")
-frame.grid(row=1, column=0, columnspan=4, sticky="nsew", padx=2, pady=2)
-
-# Configure rows and columns to grow with window
-root.grid_rowconfigure(1, weight=1)
-for i in range(4):
-    root.grid_columnconfigure(i, weight=1)
-
-
-#Labels and buttons are created and assigned a place
-
-label1 = tk.Label(control_frame, text=(
-    "Please enter only two or more files.\n"
-    "Valid extensions: .csv, .txt\n"
-    #"No compressed files (.gz, .bz2, .zip, .xz, .zst, .tar, etc.)"
-))
-label2 = tk.Label(control_frame, text=text_help_1)
-
-label1.grid(row=0, column=0, columnspan=5, sticky="w", pady=2)
-label2.grid(row=0, column=5, columnspan=5, sticky="w", pady=2)
-
-#Creating buttons and hiding all of them except the file open button
-button_open_files = tk.Button(control_frame, text="open files", command=lambda: open_files())
-button_open_files.grid(row=1, column=0, padx=2, pady=2, sticky="ew")
-
-button_graph1 = tk.Button(control_frame, text="Summary", command=lambda: funcion1())
-button_graph1.grid(row=1, column=1, padx=2, pady=2, sticky="ew")
-button_graph1.grid_forget()
-
-button_graph2 = tk.Button(control_frame, text="Extra2", command=lambda:funcion2())
-button_graph2.grid(row=1, column=2, padx=2, pady=2, sticky="ew")
-button_graph2.grid_forget()
-
-
-button_combo = tk.Button(control_frame, text="ver multi grafica", command=lambda:funcion2())
-button_combo.grid(row=1, column=2, padx=2, pady=2, sticky="ew")
-button_combo.grid_forget()
-
-
-button_graph3 = tk.Button(control_frame, text="Conversion", command=lambda:funcion3())
-button_graph3.grid(row=1, column=3, padx=2, pady=2, sticky="ew")
-button_graph3.grid_forget()
-
-button_graph4 = tk.Button(control_frame, text="Extra4", command=lambda:funcion4())
-button_graph4.grid(row=1, column=4, padx=2, pady=2, sticky="ew")
-button_graph4.grid_forget()
-
-button_graph5 = tk.Button(control_frame, text="Extra5", command=lambda:funcion5())
-button_graph5.grid(row=1, column=5, padx=2, pady=2, sticky="ew")
-button_graph5.grid_forget()
-
-button_graph6 = tk.Button(control_frame, text="Extra6", command=lambda:funcion6())
-button_graph6.grid(row=1, column=6, padx=2, pady=2, sticky="ew")
-button_graph6.grid_forget()
-
-button_graph7 = tk.Button(control_frame, text="Extra7", command=lambda:funcion7())
-button_graph7.grid(row=1, column=7, padx=2, pady=2, sticky="ew")
-button_graph7.grid_forget()
-
-button_graph8 = tk.Button(control_frame, text="Extra8", command=lambda:funcion8())
-button_graph8.grid(row=1, column=8, padx=2, pady=2, sticky="ew")
-button_graph8.grid_forget()
-
-save_file = tk.Button(control_frame, text="save_files", command=lambda:save_files())
-save_file.grid(row=1, column=1, padx=2, pady=2, sticky="ew")
-
-button_save_graph = tk.Button(control_frame, text="save gráfico", command=lambda: save_graph())
-button_save_graph.grid(row=1, column=2, padx=2, pady=2, sticky="ew")
-
-
-arreglo_x_data = ["time", "temperature"]
-arreglo_y_data = ["TG", "DTG","dT/dt"]
-
-#for time in x_data
-x_units1 = ["min"]
-#for temperature in x_data
-x_units2 = ["C","K"]
-
-#for TG en y_data
-y_units1 = ["%","mg"]
-#for DTG in y_data
-y_units2 = ["%/min","mg/min","%/s","mg/s"]
-y_units2 = ["%/min","mg/min"]
-#for dT/dt in _y_data
-#y_units3 = ["K/min","C/min","K/s","C/s"]
-y_units3 = ["K/min","C/min"]
-
-
-
-
-
-
-
-
-combo_x_data = ttk.Combobox(control_frame, textvariable=x_data_var, values=arreglo_x_data, state="readonly")
-combo_x_data.grid(row=1,column=9)
-combo_x_data.current(0)  #selecciona la primera opción (índice 0)
-combo_x_data.grid_forget()  #esconde el combobox
-
-combo_y_data = ttk.Combobox(control_frame, textvariable=y_data_var, values=arreglo_y_data, state="readonly")
-combo_y_data.grid(row=1, column=10)
-combo_y_data.current(0)
-combo_y_data.grid_forget()  # inicialmente oculto
-
-# --- Combobox de unidades X ---
-combo_x_units1 = ttk.Combobox(control_frame, textvariable=x_unit_var, values=x_units1, state="readonly")
-combo_x_units1.grid(row=1, column=11)
-combo_x_units1.current(0)
-combo_x_units1.grid_forget()
-
-combo_x_units2 = ttk.Combobox(control_frame, textvariable=x_unit_var, values=x_units2, state="readonly")
-combo_x_units2.grid(row=1, column=11)
-combo_x_units2.current(0)
-combo_x_units2.grid_forget()
-
-# --- Combobox de unidades Y ---
-combo_y_units1 = ttk.Combobox(control_frame, textvariable=y_unit_var, values=y_units1, state="readonly")
-combo_y_units1.grid(row=1, column=12)
-combo_y_units1.current(0)
-combo_y_units1.grid_forget()
-
-combo_y_units2 = ttk.Combobox(control_frame, textvariable=y_unit_var, values=y_units2, state="readonly")
-combo_y_units2.grid(row=1, column=12)
-combo_y_units2.current(0)
-combo_y_units2.grid_forget()
-
-combo_y_units3 = ttk.Combobox(control_frame, textvariable=y_unit_var, values=y_units3, state="readonly")
-combo_y_units3.grid(row=1, column=12)
-combo_y_units3.current(0)
-combo_y_units3.grid_forget()
-
-
-
-
-
-
-
-# Function to detect encoding
-def detectar_encoding(file, num_bytes=10000):
-    with open(file, 'rb') as f:
-        raw_data = f.read(num_bytes)
-    result = chardet.detect(raw_data)
-    return result['encoding'], result['confidence']
-
-
-#reads the files and compares if the encodings are the same
-def open_files():
-    global one_step
-    one_step.clear()# delete the contents of one_step
+import shutil
+import pandas as pd
+import re
+
+
+class Aplicacion(tk.Tk):
+    """
+    Graphical interface for managing and visualizing isoconversion calculations.
+    This class manages a Tkinter window that allows interaction with the
+    Picnik calculation module. It is responsible for capturing user input data,
+    invoking processing methods,
+    rendering useful graphs for analysis, and
+    exporting data and graphs generated by Picnik.
+    """
     
-    try:
-            
-        files = filedialog.askopenfilenames(
-            filetypes=[("valid files", "*.csv *.txt")]
-        )
-    
-        if len(files) > 1:#validation of two more files
-            one_step.clear()
-            one_step.extend(files)
-            print("selected files:")
-            for file in one_step:
-                print(file)
-            
-            button_open_files.grid_forget()
-            button_graph1.grid(row=1, column=0)      
+    def __init__(self):
+        """
+        inicia la ventana principal
+        """
         
+        """
+        Starts the main window
+        """
+        
+        super().__init__()
+        self.title("Picnik desktop edition")
+        self.geometry("1280x720")
+
+        """
+        interface variables
+        """
+       
+        self.fase_actual = tk.IntVar(value=1)
+        
+        """
+        picnik support variables
+        """
+        
+        self.one_step=[]
+        self.numero_de_archivos=0
+        self.fig=None
+        self.xtr=None
+        self.Beta=None
+        self.T0=None
+        self.fix1_conversion=[]
+        self.fix2_conversion=[]
+        self.fix_aux_conversion=[]
+        self.d_a1=0
+        self.p1=0
+        self.aVy=None
+        self.Vy=None
+        self.Fr=None
+        self.KAS=None
+        self.OFW=None
+        self.method_used=None 
+        self.isoTables=None    
+        self.resultado=None   
+        self.methods=""
+        self.compensation_inicio=0
+        self.compensation_error='r_Lin'
+        self.ace=None
+        self.g_a=None
+        self.compensation=None
+        self.ap2=None
+        self.Tp2=None
+        self.tp2=None
+        self.canvas=None
+        self.encoding_final=None
+        self.x=None
+        self.y=None
+        self.datos_array=None
+        self.DFlis=None
+        self.number_max=0
+        self.nombres_aux=[]
+        self.one_step_aux=[]
+           
+
+        self._configurar_menu()
+
+       
+        """
+        This section defines our main container and the two containers within it.
+        The header container will hold the buttons to be used, and the graphics 
+        container will hold the necessary graphics so that the program user can
+        make the appropriate decisions.
+        
+        """
+        
+        self.frame_contenedor = tk.Frame(self) 
+        self.frame_contenedor.pack(fill="both", expand=True)
+
+        self.frame_header = tk.LabelFrame(self.frame_contenedor, pady=10)
+        self.frame_header.pack(side="top", fill="x", padx=10, pady=5)
+
+        self.frame_grafico = tk.LabelFrame(self.frame_contenedor)
+        self.frame_grafico.pack(side="bottom", fill="both", expand=True, padx=10, pady=5)
+        etiqueta = tk.Label(self.frame_grafico, text="Picnik desktop edition",font=("Arial", 34, "bold"))
+        etiqueta.pack(expand=True)
+        
+        self.config_fases = {
+            1: [("Open Files", self.open_files)],
+            2: [("time(m) vs TG(%)", self.g1), ("time(m) vs DGT(%/m)",self.g2),("time(m) vs dT/dt(K/m)", self.g3),("temp[K] vs TG[%] ", self.g4),("temp[K] vs DTG[%/m]", self.g5),("temp[K] vs dT/dt[K/m]", self.g6)],
+            3: [("Thermogram", self.g4), ("Enter initial temperatures", self.input_temp_i)],
+            4: [("Conversion", self.conversion)],
+            5: [("Isoconversion step", self.input_data_isoconversion),    ("Isoconversion", self.mostrar_opciones)],
+            6:[("Options of activation energy", self.methods_menu),("Select activation energy method", self.chose_method_isoconversion),("Export activation energy data", self.export_data_ea)],
+            7: [("Input data compensation", self.input_date_compensation), ("ln A vs α", self.ver_compensation_alpha),("lnA=m*E + b", self.ver_compensation_E),("Summary", self.ver_compensation_report),("save data", self.export_compensation_report)],
+            8: [("Reconstruccion", self.ver_recontruction)],
+            9: [("Export Kinetic triplet data", self.save_kinetic_triplet)],
+            }
+
+        self.actualizar_botones()
+        
+        self.protocol("WM_DELETE_WINDOW",self.function_exit)  
+
+    def function_exit(self):
+         """
+         This method closes the application.
+         """
+         
+         if messagebox.askyesno("Quit", "Do you want to exit the application?"):
+             self.destroy()
+             sys.exit()    
+       
+
+    def _configurar_menu(self):
+        
+        """
+        This method creates the navigation menu
+        """
+
+        
+        menubar = tk.Menu(self)
+        self.config(menu=menubar)
+        
+        # --- menu files---
+        menu_files = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Files", menu=menu_files)
+        menu_files.add_command(label="Open Files", command=self.open_files)
+        menu_files.add_separator()
+        menu_files.add_command(label="Exit", command=self.function_exit)
+
+        # --- menu images ---
+        menu_images = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Images", menu=menu_images)
+        menu_images.add_command(label="Save Image", command=self.save_image_picnik)
+
+        # ---menu help ---
+        menu_help = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Help", menu=menu_help)
+        menu_help.add_command(label="About", command=self.about_picnik)
+        menu_help.add_command(label="Tutorial", command=self.function_tutorial)
+
+    def actualizar_botones(self):
+        """
+        clean and create action and navigation buttons
+        previous button, next button and restore button
+        """
+        for widget in self.frame_header.winfo_children():
+            widget.destroy()
+
+        fase = self.fase_actual.get()
+        
+        # button previous (second phase)
+        if fase > 1:
+            ttk.Button(self.frame_header, text="<< Previous", 
+                       command=self.go_previous).pack(side="left", padx=5)
+
+        # --- actions buttons-
+        if fase in self.config_fases:
+            for texto, comando in self.config_fases[fase]:
+                ttk.Button(self.frame_header, text=texto, command=comando).pack(side="left", padx=5)
+
+        # --- button next ---
+        if fase < len(self.config_fases):
+            ttk.Button(self.frame_header, text="Next >>", 
+                       command=self.go_next).pack(side="right", padx=5)
         else:
-            print("No file selected.")
-            messagebox.showinfo(
-                title="Two or more files, please",
-                message="Two or more files, please"
+            # reset button
+            ttk.Button(self.frame_header, text="Reiniciar Todo", 
+                       command=self.reiniciar).pack(side="right", padx=5)
+
+    def go_next(self):
+        """
+        This method takes us to the next screen
+        """
+        self.fase_actual.set(self.fase_actual.get() + 1)
+        self.actualizar_botones()
+    
+    def go_previous(self):
+        """
+        This method takes us to the previous screen
+        """
+        self.fase_actual.set(self.fase_actual.get() - 1)
+        self.actualizar_botones()
+    
+    def reiniciar(self):
+        """
+        This method resets all my variables to restart the application.
+        """
+        for widget in self.frame_grafico.winfo_children():
+            widget.destroy()
+
+        self.fase_actual.set(1)
+        self.actualizar_botones()
+        self.fig=None
+        etiqueta = tk.Label(self.frame_grafico, text="Picnik desktop edition",font=("Arial", 34, "bold"))
+        etiqueta.pack(expand=True)
+        
+        
+        #############################################################################
+        """
+        reset variables
+        """  
+        
+        self.one_step=[]
+        self.numero_de_archivos=0
+        self.fig=None
+        self.xtr=None
+        self.Beta=None
+        self.T0=None
+        self.fix1_conversion=[]
+        self.fix2_conversion=[]
+        self.fix_aux_conversion=[]
+        self.d_a1=0
+        self.p1=0
+        self.aVy=None
+        self.Vy=None
+        self.Fr=None
+        self.KAS=None
+        self.OFW=None
+        self.method_used=None 
+        self.isoTables=None    
+        self.resultado=None   
+        self.methods=""
+        self.compensation_inicio=0
+        self.compensation_error='r_Lin'
+        self.ace=None
+        self.g_a=None
+        self.compensation=None
+        self.ap2=None
+        self.Tp2=None
+        self.tp2=None
+        self.canvas=None
+        self.encoding_final=None
+        self.x=None
+        self.y=None
+        self.datos_array=None      
+        self.DFlis=None
+        self.number_max=0
+        self.nombres_aux=[]
+        self.resultado=[]
+
+        #################################################################################
+
+    
+            
+                 
+            
+
+                
+    
+    def detect_encoding(self,file, num_bytes=10000):
+        """ 
+        This method detects the encoding,which is required as 
+        a parameter within the view_graphs method.
+        """
+
+        with open(file, 'rb') as f:
+            raw_data = f.read(num_bytes)
+        result = chardet.detect(raw_data)
+        return result['encoding'], result['confidence']
+
+    def open_files(self): 
+        """ 
+        The user is prompted to upload files that are used to process and 
+        generate new information and graphics through Picnik.
+        """
+            
+        self.one_step_aux.clear()
+        
+        try:
+            files = filedialog.askopenfilenames(
+                filetypes=[("valid files", "*.csv *.txt")]
             )
-            one_step.clear()
+        
+            # Validación de dos o más archivos
+            if len(files) > 1:
+                self.one_step_aux.clear()
+                self.one_step_aux.extend(files)
+                print("selected files:")
+                for file in self.one_step_aux:
+                    print("-------------------")
+                    print(file)
+                    print("-------------------")
+                    
+                
+                # Guarda el número de archivos
+                self.numero_de_archivos = len(files)    
+            else:
+                print("No file selected o menos de 2 archivos.")
+                messagebox.showinfo(
+                    title="Two or more files, please",
+                    message="Two or more files, please"
+                )
+                self.one_step_aux.clear()
+                return # detiene la función aquí si no hay archivos válidos
+           
+            # validación del número de columnas solo corre si hay mas de un archivo
+            estado = 0
+            for file in self.one_step_aux:
+                try:
+        
+                    codificacion, confianza = self.detect_encoding(file) 
+                      
+                    # 3. Leemos las columnas con la codificación detectada
+                    df = pd.read_csv(file, nrows=0, skipinitialspace=True, encoding=codificacion, sep=r'[\t,;]+', engine='python')
+                    columnas = df.shape[1]
+                    
+                    print(f"Archivo: {file} | Codificación: {codificacion} (Confianza: {confianza}) | Columnas: {columnas}")
+                    
+                    if columnas != 3:
+                        estado = 1
+                        break 
+                        
+                except Exception as e:
+                    print(f"Error al verificar columnas en {file}: {e}")
+                    estado = 1
+                    break
+        
+            if estado == 0: 
+                self.view_graphs()
+            else:
+                messagebox.showerror(
+                    title="Error file",
+                    message="Number of columns incorrect or unreadable file. Please check your file."
+                )
+                
+        except Exception as e:
+        
+            messagebox.showerror("error", f"error open files: {e}")
+                
+                
+
+    def draw_fig(self):
+        """ 
+        Clean the canvas and draw the corresponding figure
+        """
+        for widget in self.frame_grafico.winfo_children():
+                    widget.destroy()
+
+        # canvas configure
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame_grafico)
+        self.canvas.draw()
+
+        # navigation toolbar
+        toolbar = NavigationToolbar2Tk(self.canvas, self.frame_grafico, pack_toolbar=False)
+        toolbar.update()
+
+        # # Order matters so they don't overlap
+        toolbar.pack(side=tk.BOTTOM, fill=tk.X)
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        # Manual packaging to ensure order
+        # Toolbar at the bottom and chart at the top
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        toolbar.pack(side=tk.BOTTOM, fill=tk.X)
+                        
+    #the six initial main figures are drawn
+    def view_graphs(self):
+            """
+            It is verified that the files have the same encoding; if so,
+            the encoding is passed to the `read files` method; otherwise, an error message is sent.
+            A `Data extraction` class object is created, and
+            the variables `fig`, `Beta`, `T0`, and `DFlist` are received, drawing six
+            support graphs for analysis and calculations.
+            """
+            
+            try:
+                # verification of selected files
+                if not hasattr(self, 'one_step_aux') or not self.one_step_aux:
+                    messagebox.showwarning("Warning", "No files selected to process.")
+                    return
+
+                # --- detección de encodings ---
+                codificaciones = []
+                for file in self.one_step_aux:
+                    encoding, conf = self.detect_encoding(file)
+                    if encoding:
+                        codificaciones.append(encoding)
+                    else:
+                        messagebox.showerror("Error", f"The encoding could not be detected: {file}")
+                        return
+            
+                encoding_set = set(codificaciones)
+                if len(encoding_set) == 1:
+                    self.encoding_final = encoding_set.pop()
+                else:
+                    messagebox.showerror(
+                        "Encoding incompatibility",
+                        "The files have different encodings:\n" + 
+                        "\n".join(f"{f} => {e}" for f, e in zip(self.one_step_aux, codificaciones))
+                    )
+                    return 
+
+               # data extraction and figure generation
+                self.xtr = pnk.DataExtraction()
+                
+                # Function that isolates the file name to avoid including periods in the extension or paths
+                
+                def extraer_numero_de_ruta(ruta_completa):
+                    
+                    # extract only the final name
+                    nombre_archivo = os.path.basename(ruta_completa)
+                   
+                    # remove the extension
+                    nombre_sin_extension, _ = os.path.splitext(nombre_archivo)
+                    
+                    # extract only digits and periods from the clean name
+                    solo_numeros = "".join(re.findall(r'[0-9.]', nombre_sin_extension))
+                    try:
+                        return float(solo_numeros)
+                    except ValueError:
+                        return float('inf') # Manda al final si algo sale mal
+
+                #ordering
+                self.one_step = sorted(self.one_step_aux, key=extraer_numero_de_ruta)
+
+                self.fig, self.Beta, self.T0, self.DFlis = self.xtr.read_files(self.one_step, encoding=self.encoding_final)
+                print("----------------------")
+                print(self.one_step)
+                print("----------------------")
+                
+                #review each DataFrame in the list
+                
+                array_DFlis = []
+                limite_archivos = min(len(self.DFlis), self.numero_de_archivos)
+                
+                for i in range(limite_archivos):
+                    try:
+                        # Extract the maximum from column 4, safely converting to numeric
+                        
+                        valores_numericos = pd.to_numeric(self.DFlis[i].iloc[:, 4], errors='coerce')
+                        max_valor = valores_numericos.max()
+                        
+                        if pd.notna(max_valor):
+                            array_DFlis.append(int(max_valor))
+                    except Exception:
+                        pass
+                
+                if array_DFlis:
+                    self.number_max = max(array_DFlis)
+                else:
+                    self.number_max = 0
+                
+                self.draw_fig()
+
+            except Exception as e:
+                # unespected error
+                messagebox.showerror("error", f" Non-numeric data was detected, please check your files,  {str(e)}")
+
+    #------------view images-------------------------------
+
+    def g1(self):
+        """
+        generate image one time vs TG
+        """
+        try:       
+            self.fig=self.xtr.plot_data(x_data='time',y_data='TG', x_units='min', y_units='%')   
+            self.draw_fig()
+        except:
+            messagebox.showerror("Error", "There is no data to generate the figure")
+        
+    def g2(self):
+        """
+        generate image two time vs DGT
+        """
+        try:
+            self.fig=self.xtr.plot_data(x_data='time',y_data='DTG', x_units='min', y_units='%/min')   
+            self.draw_fig()
+        except:
+            messagebox.showerror("Error", "There is no data to generate the figure")
+        
+    def g3(self):
+        """
+        generate image three time vs dT/dt
+        """
+        try:           
+            self.fig=self.xtr.plot_data(x_data='time',y_data='dT/dt', x_units='min', y_units='K/min')   
+            self.draw_fig()
+        except:
+            messagebox.showerror("Error", "There is no data to generate the figure")
+        
+    def g4(self):
+        """
+        generate image four temperature vs TG
+        """
+        try:
+            self.fig=self.xtr.plot_data(x_data='temperature',y_data='TG', x_units='K', y_units='%')   
+            self.draw_fig()
+        except:
+            messagebox.showerror("Error", "There is no data to generate the figure")
+        
+    def g5(self):
+        """
+        generate image five temperature vs DTG
+        """
+        try:            
+            self.fig=self.xtr.plot_data(x_data='temperature',y_data='DTG', x_units='K', y_units='%/min')   
+            self.draw_fig()
+        except:
+            messagebox.showerror("Error", "There is no data to generate the figure")
+            
+    def g6(self):
+        """
+        generate image six temperature vs dT/dt
+        """
+        try:
+            self.fig=self.xtr.plot_data(x_data='temperature',y_data='dT/dt', x_units='K', y_units='K/min')   
+            self.draw_fig()
+        except:
+            messagebox.showerror("Error", "There is no data to generate the figure")
+        
+    
+    def input_temp_i(self):
+        """
+        The user enters initial and final temperature values that are saved in two arrays that the 
+        Conversion function will need
+        """
+        
+        ventana = tk.Toplevel()
+        ventana.title("Enter limits")
+        ventana.geometry("440x340")
+        arreglo2=[]
+        def solo_enteros(nuevo_texto):
+            return nuevo_texto == "" or nuevo_texto.isdigit()
+        
+        validador = ventana.register(solo_enteros)
+
+        
+        # -------- CONTENEDOR Y SCROLL --------
+        main_frame = ttk.Frame(ventana)
+        main_frame.pack(fill="both", expand=True)
+        canvas = tk.Canvas(main_frame)
+        
+        label1=ttk.Label(main_frame, text="initial temperature(K)                   end temperature(K)" )
+        label1.pack()
+        
+        scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
+        frame = ttk.Frame(canvas)
+        frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        entries_a1, entries_a2 = [], []
+        vars_a1, vars_a2 = [], []
+
+        def crear_fila(i):
+            fila = ttk.Frame(frame)
+            fila.grid(row=i, column=0, pady=5, padx=10, sticky="ew")
+            ttk.Label(fila, text=f"β {self.Beta[i].round(2)}", width=10).grid(row=0, column=0)
+
+            var1 = tk.IntVar(value=int(self.number_max/2))
+            entry1 = ttk.Entry(fila, width=5, validate="key", validatecommand=(validador, "%P"))
+            entry1.grid(row=0, column=2)
+            entry1.insert(0, int(self.number_max/2))
+
+            
+            def actualizar_minimo(val):
+                v = int(float(val))
+                scale2.config(from_=v)
+                entry1.delete(0, tk.END)
+                entry1.insert(0, str(v))
+                var1.set(v)
+    
+                if scale2.get() < v:
+                    scale2.set(v)
+                
+                
+            scale1 = ttk.Scale(fila, from_=0, to=self.number_max, orient="horizontal", variable=var1, command=actualizar_minimo)
+            scale1.grid(row=0, column=1, padx=5, sticky="ew")
+
+            def update_scale1(event):
+                t = entry1.get()
+                if t.isdigit():
+                    val = int(t)
+                    if 0 <= val <= int(self.number_max): var1.set(val)
+
+            entry1.bind("<KeyRelease>", update_scale1)
+
+            var2 = tk.IntVar(value=int((self.number_max+self.number_max/2)))
+            entry2 = ttk.Entry(fila, width=5, validate="key", validatecommand=(validador, "%P"))
+            entry2.grid(row=0, column=4)
+            entry2.insert(0, int((self.number_max+self.number_max/2)))
+
+            def mover_scale2(val):
+                v = int(float(val))
+                entry2.delete(0, tk.END)
+                entry2.insert(0, str(v))
+                var2.set(v)
+
+            scale2 = ttk.Scale(fila, from_=0, to=4*(self.number_max), orient="horizontal", variable=var2, command=mover_scale2)
+            scale2.grid(row=0, column=3, padx=5, sticky="ew")
+
+            def update_scale2(event):
+                t = entry2.get()
+                if t.isdigit():
+                    val = int(t)
+                    if self.number_max+1 <= val <= 4*(self.number_max): var2.set(val)
+
+            entry2.bind("<KeyRelease>", update_scale2)
+
+            vars_a1.append(var1); vars_a2.append(var2)
+            entries_a1.append(entry1); entries_a2.append(entry2)
+
+        for i in range(self.numero_de_archivos): crear_fila(i)
+
+        # -------- validation --------
+        
+        def obtener():
+            for i in range(self.numero_de_archivos):
+                val1_str = entries_a1[i].get()
+                val2_str = entries_a2[i].get()
+                arreglo2.append(entries_a2[i].get())
+                
+                
+                # see empty
+                
+                if val1_str == "" or val2_str == "":
+                    messagebox.showwarning("Error", f"Empty box in the row {i+1}")
+                    arreglo2.clear()
+                    return
+                    
+
+                #  verify ranges
+                
+                v1, v2 = int(val1_str), int(val2_str)
+                if not (0 <= v1 <= self.number_max):
+                    messagebox.showerror("out of range", f"In row {i+1}, the first value ({v1}) must be between 0 and {self.number_max}.")
+                    arreglo2.clear()
+                    return
+                if not (v1 <= v2):
+                    messagebox.showerror("out of range", f"In row {i+1}, the second value {v2} must be greater than the first value {v1}")
+                    arreglo2.clear()
+                    return
+                    
+            self.fix1_conversion=[v.get() for v in vars_a1]
+            
+            # convert to integers
+            self.fix2_conversion=[int(v) for v in arreglo2 if v.isdigit()]
+            
+            print("a1: ", [v.get() for v in vars_a1])
+            print("a2: ",self.fix2_conversion)
+            
+            messagebox.showinfo("Saved", "All values ​​are within range and have been saved.")
+            ventana.destroy()
+
+        boton_frame = ttk.Frame(ventana)
+        boton_frame.pack(fill="x")
+        ttk.Button(boton_frame, text="Save values", command=obtener).pack(pady=10)
+
+   
+    def conversion(self):
+        """
+        the picnik conversion function is executed
+        """
+        try:
+           
+            self.fig=self.xtr.Conversion(self.fix1_conversion,self.fix2_conversion)
+            self.draw_fig()
+
+        except Exception as e:
+            
+            messagebox.showerror("Unexpected error", f"Details: {str(e)}")
+
+    #-----------------------------------------------------------------------------------#
+
+    def input_data_isoconversion(self):          #----revisar----------------------------
+        """
+        The user saves the Δα value that they deem appropriate.
+        """
+        fuente = ("Helvetica", 12, "bold")
+        
+        ventana_isoconversion = tk.Toplevel(self)
+        ventana_isoconversion.title("Input data")
+        ventana_isoconversion.geometry("400x450")
+        ventana_isoconversion.resizable(False, False)
+
+        # --- d_a ---
+        def validar_entrada(texto_nuevo):
+            # Allows you to delete the field completely
+            
+            if texto_nuevo == "":
+                return True
+                
+            # only digits and at most one decimal point
+            
+            if not (all(char.isdigit() or char == "." for char in texto_nuevo) and texto_nuevo.count(".") <= 1):
+                return False # Bloquea letras, espacios o un segundo punto
+                
+            # maximum 3 numbers after the period
+            if "." in texto_nuevo:
+                parte_decimal = texto_nuevo.split(".")[1]
+                if len(parte_decimal) > 3:
+                    return False # Bloquea el cuarto decimal de inmediato
+        
+            return True
+
+        # registered the function in the Tkinter window
+        
+        v_cmd = ventana_isoconversion.register(validar_entrada)
+        
+        tk.Label(ventana_isoconversion, text="Δα = ", font=fuente).pack(pady=5)
+        valor_inicio = tk.DoubleVar(value=0.005)
+    
+        spinbox_rango = tk.Spinbox(ventana_isoconversion, from_=0, to=0.99, 
+                                  increment=0.001, state="normal",bg="white", 
+                                  textvariable=valor_inicio, font=fuente, fg="black",
+                                  validate="key", validatecommand=(v_cmd, '%P'))
+        spinbox_rango.pack(pady=5)
+                        
+                        
+        
+
+        
+        #--- save data and exit---
+        def guardar_y_cerrar():
+            self.d_a1 = valor_inicio.get()
+            ventana_isoconversion.destroy()
+
+        #--- button ok ---
+        button_algo = tk.Button(ventana_isoconversion, text="OK", command=guardar_y_cerrar)
+        button_algo.pack(side=tk.BOTTOM, pady=20)
+        
+        
+    
+        
+        
+    def mostrar_opciones(self):
+        """ 
+        This method is responsible for showing the user a preview 
+        of the time, temperature, and conversion rate files.
+        """
+        
+        # --- if it already exists, it does nothing.---
+        if hasattr(self, 'menu_obj') and self.menu_obj.winfo_exists():
+            return
+    
+        self.opcion_var = tk.StringVar(self.frame_header)
+        self.opcion_var.set("temperature")
+        
+        # we disable the "save" button every time the menu option changes.
+        # the trace command detects when the user selects something new.
+        self.opcion_var.trace_add("write", lambda *args: self.btn_save.config(state="disabled"))
+    
+        self.menu_obj = tk.OptionMenu(self.frame_header, self.opcion_var, "time", "temperature", "conversion rate")
+        self.menu_obj.pack(side="left", padx=10)
+    
+        def ejecutar_accion(tipo):
+            seleccion = self.opcion_var.get()
+            if tipo == "preview":
+                # if you press view, we activate the save button
+                self.btn_save.config(state="normal")
+                
+                if seleccion == "time": self.ver_timeAdvIsoDF()
+                elif seleccion == "temperature": self.ver_TempAdvIsoDF()
+                elif seleccion == "conversion rate": self.ver_diffAdvIsoDF()
+            else: # tipo == "save"
+                if seleccion == "time": self.export_timeAdvIsoDF()
+                elif seleccion == "temperature": self.export_TempAdvIsoDF()
+                elif seleccion == "conversion rate": self.export_diffAdvIsoDF()
+    
+        # view button (always active)
+        self.btn_see = tk.Button(self.frame_header, text="preview", 
+                                 command=lambda: ejecutar_accion("preview"), width=10)
+        self.btn_see.pack(side="left", padx=5)
+    
+        # save button (starts off)
+        self.btn_save = tk.Button(self.frame_header, text="save", 
+                                  command=lambda: ejecutar_accion("save"), 
+                                  width=10, state="disabled") # <--- Estado inicial
+        self.btn_save.pack(side="left", padx=5)
+
+
+    def ver_TempAdvIsoDF(self):
+        """
+        View a preview of the temperature data
+        """
+        self.xtr = pnk.DataExtraction()       
+        self.fig, self.Beta, self.T0, self.number_max = self.xtr.read_files(self.one_step, encoding=self.encoding_final)    
+        self.xtr.Conversion(self.fix1_conversion,self.fix2_conversion)
+        self.isoTables=None
+        
+        try:
+            # frame clean
+            for widget in self.frame_grafico.winfo_children():
+                widget.destroy()
+
+            # #get data and ensure that self.isoTables is a dataFrame
+            self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1)
+            # if it's a tuple, we extract the array
+            text_area = tk.Text(self.frame_grafico, font=("Consolas", 10), padx=10, pady=10)
+            # insert text
+            text_area.insert(tk.END, str(self.isoTables[0])) 
+            
+            text_area.config(state=tk.DISABLED)
+            text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        except Exception as e:
+            messagebox.showerror("error", f"there is no data to display  {e}")
+            
+        self.fig=None
+
+
+    def export_TempAdvIsoDF(self):
+        """
+        exports temperature data
+        """
+        try:
+           if self.isoTables != None:
+           
+               filepath = filedialog.asksaveasfilename(
+                   defaultextension=".csv",
+                   filetypes=[("Archivo CSV", "*.csv")],
+                   title="Guardar tabla de resultados"
+               )
+    
+               if filepath:
+                   self.isoTables[0].index.name = "alpha"
+                   self.isoTables[0].index = np.trunc(self.isoTables[0].index * 1e6) / 1e6
+                   self.isoTables[0].to_csv(filepath, index=True, encoding='utf-8-sig', sep=',')
+           else:
+               messagebox.showerror("error", "there is no data to save")
+                 
+        except Exception as e:
+            messagebox.showerror("error", f"error unexpected {e}")
+         
+        
+    def ver_timeAdvIsoDF(self):
+        """
+        View a preview of the time data
+        """
+    
+        self.xtr = pnk.DataExtraction()       
+        self.fig, self.Beta, self.T0, self.number_max  = self.xtr.read_files(self.one_step, encoding=self.encoding_final)    
+        self.xtr.Conversion(self.fix1_conversion,self.fix2_conversion)
+        self.isoTables=None
+        
+        try:
+            # --frame clean
+            for widget in self.frame_grafico.winfo_children():
+                widget.destroy()
+
+            # obtain data and ensure that self.isoTables is a DataFrame
+            self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1)
+            # if it's a tuple, we extract the array
+            text_area = tk.Text(self.frame_grafico, font=("Consolas", 10), padx=10, pady=10)
+            # insert the formatted text
+            text_area.insert(tk.END, str(self.isoTables[1])) 
+            text_area.config(state=tk.DISABLED)
+            text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        except Exception as e:
+            messagebox.showerror("error", f"there is no data to display {e}")
+            
+        self.fig=None
+
+
+    def export_timeAdvIsoDF(self):
+        """
+        exports time data
+        """
+        
+        try:
+           if self.isoTables != None:
+           
+               filepath = filedialog.asksaveasfilename(
+                   defaultextension=".csv",
+                   filetypes=[("Archivo CSV", "*.csv")],
+                   title="Guardar tabla de resultados"
+               )
+    
+               if filepath:
+                   self.isoTables[1].index.name = "alpha"
+                   self.isoTables[1].index = np.trunc(self.isoTables[1].index * 1e6) / 1e6
+                   self.isoTables[1].to_csv(filepath, index=True, encoding='utf-8-sig', sep=',')
+                   print(f"¡Listo! Guardado en: {filepath}")
+           else:
+               messagebox.showerror("error", "there is no data to save")
+                 
+        except Exception as e:
+            #messagebox.showerror("error", "no hay datos a guardar")
+            messagebox.showerror("error", f"error unexpected  {e}")
+         
+        
+            
+    def ver_diffAdvIsoDF(self):
+        """
+        View a preview of the convertion rate data
+        """
+
+        self.xtr = pnk.DataExtraction()       
+        self.fig, self.Beta, self.T0, self.number_max  = self.xtr.read_files(self.one_step, encoding=self.encoding_final)    
+        self.xtr.Conversion(self.fix1_conversion,self.fix2_conversion)
+        self.isoTables=None
+        
+        try:
+            # clean frame
+            for widget in self.frame_grafico.winfo_children():
+                widget.destroy()
+
+            # obtain data and ensure that self.isoTables is a DataFrame
+            self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1)
+            # if it's a tuple, we extract the array
+            text_area = tk.Text(self.frame_grafico, font=("Consolas", 10), padx=10, pady=10)
+            # insert text
+            text_area.insert(tk.END, str(self.isoTables[2])) 
+            text_area.config(state=tk.DISABLED)
+            text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        except Exception as e:
+            messagebox.showerror("error", f"there is no data to display {e}")
+            
+
+        self.fig=None
+
+
+    def export_diffAdvIsoDF(self):
+        """
+        exports convertion rate data
+        """
+        
+        try:
+           if self.isoTables != None:
+           
+               filepath = filedialog.asksaveasfilename(
+                   defaultextension=".csv",
+                   filetypes=[("file csv", "*.csv")],
+                   title="save results"
+               )
+    
+               if filepath:
+                   self.isoTables[2].index.name = "alpha"
+                   self.isoTables[2].index = np.trunc(self.isoTables[2].index * 1e6) / 1e6
+                   self.isoTables[2].to_csv(filepath, index=True, encoding='utf-8-sig', sep=',')
+                   
+           else:
+               messagebox.showerror("error", "there is no data to save")
+                 
+        except Exception as e:
+            messagebox.showerror("error", f"error unexpected {e}")
+         
+            
+         
+    #--------------------------------------------------------------------------        
+             
+    def function_input_advanced_vyazovkin_method(self,ventana_padre):
+        """
+        In this function, the user defines the minimum activation energy, 
+        maximum activation energy, and percentile for the advanced Vyazovkin method.
+        """
+        
+        ventana_isoconversion = tk.Toplevel(ventana_padre)
+        ventana_isoconversion.title("enter data")
+        ventana_isoconversion.geometry("400x450")
+        ventana_isoconversion.resizable(False, False)
+        
+        fuente = ("Helvetica", 12, "bold")
+
+        tk.Label(ventana_isoconversion, text="activate energy min = ").pack(pady=5)
+        valor_inicio_x = tk.DoubleVar(value=5)
+        spinbox_rango = tk.Spinbox(ventana_isoconversion, from_=0, to=250, 
+                                increment=0.5, state="readonly", 
+                                textvariable=valor_inicio_x,font=fuente,fg="black")
+        spinbox_rango.pack(pady=5)
+
+        tk.Label(ventana_isoconversion, text="activate energy max = ").pack(pady=5)
+        valor_inicio_y = tk.DoubleVar(value=380)
+        spinbox_rango = tk.Spinbox(ventana_isoconversion, from_=250.05, to=500, 
+                                increment=0.5, state="readonly", 
+                                textvariable=valor_inicio_y,font=fuente,fg="black")
+        spinbox_rango.pack(pady=5)
+
+        tk.Label(ventana_isoconversion, text="percentile = ").pack(pady=5)
+        valor_inicio_p = tk.DoubleVar(value=0.80)
+        spinbox_rango = tk.Spinbox(ventana_isoconversion, from_= 0, to= 1, 
+                                increment=0.005, state="readonly", 
+                                textvariable=valor_inicio_p,font=fuente,fg="black")
+        spinbox_rango.pack(pady=5)
+
+        
+       
+        # --- save data ---
+        def guardar_y_cerrar():
+            
+            self.x = valor_inicio_x.get()
+            self.y = valor_inicio_y.get()
+            self.p1 = valor_inicio_p.get()
+            ventana_isoconversion.destroy()
+
+        # --- button ok ---
+        button_algo = tk.Button(ventana_isoconversion, text="OK", command=guardar_y_cerrar)
+        button_algo.pack(side=tk.BOTTOM, pady=20)
+        ventana_padre.wait_window(ventana_isoconversion)
+    
+    
+    def function_input_vyazovkin_method(self,ventana_padre):
+        """
+        In this function, the user defines the minimum and
+        maximum activation energy for the Vyazovkin method.
+        """
+        ventana_isoconversion = tk.Toplevel(ventana_padre)
+        ventana_isoconversion.title("enter data")
+        ventana_isoconversion.geometry("400x450")
+        fuente = ("Helvetica", 12, "bold")
+       
+        ventana_isoconversion.resizable(False, False)
+
+        tk.Label(ventana_isoconversion, text="activate energy min = ").pack(pady=5)
+        valor_inicio_x = tk.DoubleVar(value=5)
+        spinbox_rango = tk.Spinbox(ventana_isoconversion, from_=0, to=250, 
+                                increment=0.5, state="readonly", 
+                                textvariable=valor_inicio_x,font=fuente,fg="black")
+        spinbox_rango.pack(pady=5)
+
+        tk.Label(ventana_isoconversion, text="activate energy max = ").pack(pady=5)
+        valor_inicio_y = tk.DoubleVar(value=380)
+        spinbox_rango = tk.Spinbox(ventana_isoconversion, from_=250.05, to=500, 
+                                increment=0.5, state="readonly", 
+                                textvariable=valor_inicio_y,font=fuente,fg="black")
+        spinbox_rango.pack(pady=5)
+
+      
+        
+        
+       
+        # --- save data ---
+        def guardar_y_cerrar():
+            
+            self.x = valor_inicio_x.get()
+            self.y = valor_inicio_y.get()
+            ventana_isoconversion.destroy()
+
+        # --- button ok ---
+        button_algo = tk.Button(ventana_isoconversion, text="OK", command=guardar_y_cerrar)
+        button_algo.pack(side=tk.BOTTOM, pady=20)
+        ventana_padre.wait_window(ventana_isoconversion)
+    
+    def methods_menu(self):
+        """ 
+        The user chooses the isoconversional methods they want to verify;
+        then they see resulting graphs that they can use as support to know which method to follow.
+        """
+        
+        top = tk.Toplevel(self.frame_contenedor)
+        top.title("Select options")
+        top.geometry("300x450")
+        top.configure(padx=20, pady=20)
+    
+        color_sistema = self.frame_contenedor.cget("bg") 
+        nombres = ["Friedman", "Kissinger-Akahira-Sunose", "Flynn-Wall-Ozawa", "Advance-Vyazovkin", "Vyazovkin"]
+        vars_opciones = [tk.IntVar(value=0) for _ in range(5)]
+        botones_lista = []
+        self.nombres_aux=[]
+    
+        def toggle_boton(idx):
+            if vars_opciones[idx].get() == 0:
+                vars_opciones[idx].set(1)
+                botones_lista[idx].config(bg="#4CAF50", fg="white")
+            else:
+                vars_opciones[idx].set(0)
+                botones_lista[idx].config(bg=color_sistema, fg="black")
+    
+        tk.Label(top, text="click to mark:", font=("Arial", 11, "bold")).pack(pady=10)
+        
+        for i in range(5):
+            btn = tk.Button(top, 
+                            text=nombres[i].upper(), 
+                            font=("Arial", 10),
+                            width=30,
+                            pady=8,
+                            cursor="hand2")
+            btn.config(command=lambda i=i: toggle_boton(i))
+            btn.pack(pady=5)
+            botones_lista.append(btn)
+        
+        tk.Button(top, text="OK", command=top.destroy, 
+                  bg="#333333", fg="white", font=("Arial", 10, "bold"), pady=10).pack(fill="x", pady=20)
+    
+        self.frame_contenedor.wait_window(top)
+        n = [v.get() for v in vars_opciones]
+        
+        # if you press 4 or 4 and 5, the advance vyazovkin window appears. If you press 5 but not 4, the 5 vyazovkin window appears.
+        
+        if n[3] == 1: 
+            self.function_input_advanced_vyazovkin_method(self.frame_contenedor) 
+        elif n[4] == 1: 
+            self.function_input_vyazovkin_method(self.frame_contenedor)
+    
+        
+        try:
+           
+            self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1)
+            self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)   
+           
+            
+            if n[0] == 1:
+                self.ace.Fr()
+                self.nombres_aux.append("Friedman")
+                
+            if n[1] == 1:
+                self.ace.KAS()
+                self.nombres_aux.append("Kissinger-Akahira-Sunose")
+                     
+            if n[2] == 1:
+                self.ace.OFW()
+                self.nombres_aux.append("Flynn-Wall-Ozawa")
+               
+            if n[3] == 1:
+                
+                ventana_espera = tk.Toplevel(self.frame_contenedor)
+                ventana_espera.title("Please wait")
+                ventana_espera.geometry("250x100")
+                ventana_espera.resizable(False, False)
+                
+                # keeps the window facing forward
+                ventana_espera.attributes("-topmost", True)
+                
+                # calculated
+                label_espera = tk.Label(ventana_espera, text="Calculated...", font=("Arial", 12, "bold"))
+                label_espera.pack(pady=35)
+                
+                ventana_espera.update()
+                
+                try:
+            
+                    self.ace.aVy((self.x, self.y), var='time', p=self.p1)
+                    self.nombres_aux.append("Advance-Vyazovkin")
+                   
+                    
+                finally:
+                    
+                    ventana_espera.destroy()
+                    
+             
+           
+                
+            if n[4] == 1:
+                ventana_espera = tk.Toplevel(self.frame_contenedor)
+                ventana_espera.title("Please wait")
+                ventana_espera.geometry("250x100")
+                ventana_espera.resizable(False, False)
+                
+                ventana_espera.attributes("-topmost", True)
+                
+                label_espera = tk.Label(ventana_espera, text="calculated...", font=("Arial", 12, "bold"))
+                label_espera.pack(pady=35)
+                
+                ventana_espera.update()
+                
+                try:
+                    self.ace.Vy((self.x, self.y),method='senum-yang')
+                    self.nombres_aux.append("Vyazovkin")
+                 
+                    
+                finally:
+                    ventana_espera.destroy()
+                    
+                
+               
+            
+            self.fig = self.ace.Ea_plot()
+            self.draw_fig()
+            #print(self.isoTables)
+
+            
+
+        except Exception as e:
+            messagebox.showerror("error" ,f"unexpected error {e}")
         
           
-    
-    except:
-        messagebox.showerror("unexpected error")
+        
+    def iso_vy(self):
+        """shows the graph of the vyazovkin method"""
+        try:
+           
+            self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1)
+            self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
+            self.ace.Vy((self.x, self.y),method='senum-yang')
+            self.fig = self.ace.Ea_plot()
+            self.draw_fig()
+            
+        except:
+            messagebox.showerror("unexpected error")
+
+    def iso_avy(self):
+        """shows the graph of the avance vyazovkin method"""
+        try:
+           
+            self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1)
+            self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
+            self.ace.aVy((self.x, self.y), var='time', p=self.p1)
+            self.fig = self.ace.Ea_plot()
+            self.draw_fig()
+            
+        except:
+            messagebox.showerror("unexpected error")
+
+    def iso_fr(self):
+        """shows the graph of the friedman method"""
+        try:
+        
+            self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1)
+            self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
+            self.ace.Fr() 
+            self.fig = self.ace.Ea_plot()
+            self.draw_fig()
+            
+        except Exception as e:
+            messagebox.showerror("error",f"unexpected error {e}")
+
+    def iso_kas(self):
+        """shows the graph of the KAS method"""
+        try:
+           
+            self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1)
+            self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
+            self.ace.KAS()
+            self.fig = self.ace.Ea_plot()
+            self.draw_fig()
+
+        except Exception as e:
+            messagebox.showerror("error",f"unexpected error {e}")
 
 
+    def iso_ofw(self):
+        """shows the graph of the OFW method"""
+        try:
+           
+            self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1)
+            self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
+            self.ace.OFW()
+            self.fig = self.ace.Ea_plot()
+            self.draw_fig()
+            
+        except Exception as e:
+            messagebox.showerror("error",f"unexpected error {e}")
 
-#the first graph is created
-def funcion1():
-    global one_step, fig, canvas,xtr, label2, text_help_1
-    global x_data,y_data,x_units,y_units
-    
-    # Clear the chart frame
-    for widget in frame.winfo_children():
-        widget.destroy()
 
-    try:
+    def chose_method_isoconversion(self):
+        """ 
+        The user chooses the isoconversion method they deem appropriate, after analyzing the previous method.
+        """
+        
+        ventana_isoconversion = tk.Toplevel(self)
+        ventana_isoconversion.title("Enter data")
+        ventana_isoconversion.geometry("400x450")
+        ventana_isoconversion.resizable(False, False)
 
-        # Get encoding of all selected files
-        codificaciones = []
-        for file in one_step:
-            encoding, conf = detectar_encoding(file)
-            if encoding:
-                codificaciones.append(encoding)
+        # --- method---
+        tk.Label(ventana_isoconversion, text="Method:").pack(pady=5)
+        
+        cinco_metodos =self.nombres_aux
+        
+        #cinco_metodos = ["aVy", "Vy", "Fr", "KAS", "OFW"]
+        combo_methods = ttk.Combobox(ventana_isoconversion, values=cinco_metodos, state="readonly")
+        combo_methods.set(self.nombres_aux[0]) # default value
+        combo_methods.pack(pady=5)
+        
+        self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1) # create variable with this default value
+        self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
+       
+        
+        def guardar_y_cerrar():
+            
+            self.methods=combo_methods.get()
+
+            if self.methods=="Advance-Vyazovkin":
+                print("avy")
+                
+                # 1. Crear la ventana emergente de "Calculando"
+                ventana_espera = tk.Toplevel(self.frame_contenedor)
+                ventana_espera.title("Please wait")
+                ventana_espera.geometry("250x100")
+                ventana_espera.resizable(False, False)
+                
+                # Mantiene la ventana siempre al frente
+                ventana_espera.attributes("-topmost", True)
+                
+                # Texto de aviso
+                label_espera = tk.Label(ventana_espera, text="calculated...", font=("Arial", 12, "bold"))
+                label_espera.pack(pady=35)
+                
+                # [CRUCIAL] Fuerza a Tkinter a dibujar la ventana emergente antes de congelarse
+                ventana_espera.update()
+                
+                try:
+                    # 2. PROCESO PESADO (Simulado con sleep)
+                    self.method_used =self.ace.aVy((self.x, self.y), var='time', p=self.p1)  #opcion para escojer metodo  de los cinco
+                  
+                    
+                finally:
+                    # 3. Destruir la ventana emergente automáticamente al terminar
+                    ventana_espera.destroy()
+                    
+            
+            
+            elif self.methods=="Vyazovkin":
+                print("Vy")
+                
+                
+                ventana_espera = tk.Toplevel(self.frame_contenedor)
+                ventana_espera.title("Please wait")
+                ventana_espera.geometry("250x100")
+                ventana_espera.resizable(False, False)
+                
+                ventana_espera.attributes("-topmost", True)
+                
+                label_espera = tk.Label(ventana_espera, text="calculated...", font=("Arial", 12, "bold"))
+                label_espera.pack(pady=35)
+                
+                ventana_espera.update()
+                
+                try:
+                    self.method_used=  self.ace.Vy((self.x, self.y),method='senum-yang')
+                  
+                    
+                finally:
+                    ventana_espera.destroy()
+                
+                
+              
+            elif self.methods=="Friedman":
+                print("FR")
+                self.method_used=  self.ace.Fr() 
+              
+            elif self.methods=="Kissinger-Akahira-Sunose":
+                print("KAS")
+                self.method_used= self.ace.KAS()
+               
+            elif self.methods=="Flynn-Wall-Ozawa":
+                print("OFW")
+                self.method_used= self.ace.OFW()
+              
             else:
-                messagebox.showerror("Error", f"The encoding could not be detected: {file}")
+                messagebox.showinfo("info","You must choose a method in the previous process")
+            ventana_isoconversion.destroy()
+
+        # --- button ok ---
+        button_algo = tk.Button(ventana_isoconversion, text="OK", command=guardar_y_cerrar)
+        button_algo.pack(side=tk.BOTTOM, pady=20)
+
+    def input_date_compensation(self):
+        """ 
+        This method inputs the data necessary for the Picnik compensation_effect method
+        """
+
+        fuente = ("Helvetica", 12, "bold")
+        
+        ventana_compensation = tk.Toplevel(self)
+        ventana_compensation.title("Enter data")
+        ventana_compensation.geometry("400x450")
+        ventana_compensation.resizable(False, False)
+
+        # --- d_a ---
+        opciones_beta = []
+        for i in range(self.numero_de_archivos):
+            texto = f"Beta {i} = {self.Beta[i]:.1f}"
+            opciones_beta.append(texto)
+        
+        # use StringVar because the Spinbox now contains text (Beta 0 = ...)
+        valor_texto = tk.StringVar(value=opciones_beta[0])
+        
+        tk.Label(ventana_compensation, text="Select Beta:").pack(pady=5)
+        
+        spinbox_rango = tk.Spinbox(
+            ventana_compensation, 
+            values=opciones_beta, 
+            state="readonly", 
+            textvariable=valor_texto,
+            font=fuente,
+            fg="black",
+            width=20
+        )
+        spinbox_rango.pack(pady=5)
+
+        # --- select model ---
+        tk.Label(ventana_compensation, text="select model = ").pack(pady=5)
+        options = ["r_Lin", "r_NL", "mse_NL"]
+        combo_options = ttk.Combobox(ventana_compensation, values=options, state="readonly")
+        combo_options.set("r_Lin") # default value
+        combo_options.pack(pady=5)
+
+        def actualizar_visibilidad(event=None):
+            pass
+        
+        combo_options.bind("<<ComboboxSelected>>", actualizar_visibilidad)
+        actualizar_visibilidad() # initial run
+
+
+        # --- save data ---
+        def guardar_y_cerrar():
+            
+            self.compensation_inicio = opciones_beta.index(valor_texto.get())
+            self.compensation_error= combo_options.get()
+            
+            print(f"Variables actualizadas: B={self.compensation_inicio}, Linear={self.compensation_error}")
+            ventana_compensation.destroy()
+
+        # --- button ok ---
+        button_algo = tk.Button(ventana_compensation, text="OK", command=guardar_y_cerrar)
+        button_algo.pack(side=tk.BOTTOM, pady=20)
+        
+        
+    
+    def ver_compensation_alpha(self):
+        """
+        visualize the compensation graph ln A vs alpha
+        """
+        self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
+        
+        try:
+    
+            self.compensation = self.ace.compensation_effect(
+                self.compensation_inicio,
+                self.method_used[2],
+                self.method_used[3],
+                error_m=self.compensation_error
+            )
+    
+            if self.compensation is None:
+                messagebox.showinfo("info","The compensation effect could not be calculated")
                 return
     
-        # Check if all encodings are equal
-        encoding_set = set(codificaciones)
-        if len(encoding_set) == 1:
-            encoding_final = encoding_set.pop()
-        else:
-            messagebox.showerror(
-               "Encoding incompatibility",
-               "The files have different encodings:\n" + "\n".join(f"{f} => {e}" for f, e in zip(one_step, codificaciones))
+            self.fig = Figure(figsize=(7, 6), dpi=100)
+            ax = self.fig.add_subplot(111)
+    
+             
+            ax.errorbar(
+                self.method_used[0],
+                self.compensation[0],
+                self.compensation[1],
+                fmt='o',
+                color='blue'
             )
-            return  # Does not continue if the encodings are different
     
-       # Continue reading files and Dataextraction object is created
-       
-        xtr = pnk.DataExtraction()
-        
-        fig= xtr.read_files(one_step, encoding=encoding_final)
+            ax.set_xlabel(r'$\alpha$')
+            ax.set_ylabel(r'$\ln(A_{\alpha})$')
+            ax.set_title(r'$\ln(A)$ vs $\alpha$')
+            ax.grid(True)
     
-        text_help_1 = ""
-        for b in range(len(xtr.Beta)):
-            text_help_1 += f'{xtr.Beta[b]:.3f} +/- {xtr.BetaError[b]:.3f} K/min\n'
+            self.fig.tight_layout()
+            self.draw_fig()
     
-        label2.config(text=text_help_1)
+        except Exception as e:
+            print("Error in ver_compensation_alpha:", e)
+            messagebox.showinfo("info","error in ver_compensation alpha")
+        
+        #-----------------------------------------------------------------------------------#
+    def ver_compensation_E(self):
+        """
+        visualize the compensation graph ln A vs E
+        """
+        self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
+        
+        try:
     
-        # Insert the figure into the frame using FigureCanvasTkAgg
-        canvas = FigureCanvasTkAgg(fig, master=frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        
-        button_graph1.grid_forget()
-        button_graph2.grid(row=1, column=0)
-        button_combo.grid(row=1,column=3)
-        combo_x_data.grid(row=1,column=4)
-        combo_y_data.grid(row=1,column=5)
-        
-                # --- Función que se ejecutará cuando se escoja una opción ---
-        # --- Funciones de selección ---
-        def select_x_data(event):
-            valor = x_data_var.get()
-            # ocultar todos
-            combo_x_units1.grid_forget()
-            combo_x_units2.grid_forget()
-        
-            if valor == "time":
-                combo_x_units1.grid(row=1, column=11)
-                x_unit_var.set(x_units1[0])
-            elif valor == "temperature":
-                combo_x_units2.grid(row=1, column=11)
-                x_unit_var.set(x_units2[0])
-        
-        def select_y_data(event):
-            valor = y_data_var.get()
-            # ocultar todos
-            combo_y_units1.grid_forget()
-            combo_y_units2.grid_forget()
-            combo_y_units3.grid_forget()
-        
-            if valor == "TG":
-                combo_y_units1.grid(row=1, column=12)
-                y_unit_var.set(y_units1[0])
-            elif valor == "DTG":
-                combo_y_units2.grid(row=1, column=12)
-                y_unit_var.set(y_units2[0])
-            elif valor == "dT/dt":
-                combo_y_units3.grid(row=1, column=12)
-                y_unit_var.set(y_units3[0])
-        
-        # --- Vincular eventos ---
-        combo_x_data.bind("<<ComboboxSelected>>", select_x_data)
-        combo_y_data.bind("<<ComboboxSelected>>", select_y_data)
-        
+            self.compensation = self.ace.compensation_effect(
+                self.compensation_inicio,
+                self.method_used[2],
+                self.method_used[3],
+                error_m=self.compensation_error
+            )
+    
+            if self.compensation is None:
+                print("error calculate self.compensationensation effect")
+                messagebox.showinfo("info","error calculate self.compensationensation effect")
+                return
+    
+            ln_A, errorlnA, a, errora, b, errorb, Afit, Efit, r_sq, mod = self.compensation
+    
+            self.fig = Figure(figsize=(7, 6), dpi=100)
+            ax = self.fig.add_subplot(111)
+    
+            lnAfit = np.log(Afit)
+    
+            # points
+            ax.scatter(
+                Efit,
+                lnAfit,
+                color='red',
+                s=60
+            )
+    
+            # straight
+            xfit = np.linspace(min(Efit), max(Efit), 100)
+            yfit = a * xfit + b
+    
+            ax.plot(
+                xfit,
+                yfit,
+                color='black',
+                linewidth=2
+            )
+    
+            # labels of models
+            for i, m in enumerate(mod):
+                ax.text(
+                    Efit[i],
+                    lnAfit[i],
+                    m.__name__,
+                    fontsize=9
+                )
+    
+            ax.set_xlabel(r'$E$' )
+            ax.set_ylabel(r'$\ln(A)$')
+            ax.set_title(f"Compensation Effect ln A vs E              slope={a:.2f}  interception={b:.2f}")
+            ax.grid(True) 
+    
+            self.fig.tight_layout()
+            self.draw_fig()
+    
+        except Exception as e:
+            messagebox.showerror("error",f"compensation error {e}")
+
             
-        
-    except:
-        messagebox.showerror("unexpected error")
-
-
-
-#the second graph is created
-def funcion2():
-    global fig,label2,text_help_1,xtr,x_data,y_data,x_units,y_units
-    text_help_1=""
-    label2.config(text=text_help_1)
-    # Clear the chart frame
-    for widget in frame.winfo_children():
-        widget.destroy()
-        
-    try:
-       
-        print("x_data:", x_data_var.get())
-        print("x_units:", x_unit_var.get())
-        print("y_data:", y_data_var.get())
-        print("y_units:", y_unit_var.get())
-
-        fig=xtr.plot_data(x_data=x_data_var.get(),y_data=y_data_var.get(), x_units=x_unit_var.get(), y_units=y_unit_var.get())    
-        # Insert the figure into the frame using FigureCanvasTkAgg
-        canvas = FigureCanvasTkAgg(fig, master=frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        
-        button_graph2.grid_forget()
-        button_graph3.grid(row=1, column=0)
-        
-        
-
-    except:
-        messagebox.showerror("unexpected error")
-
-
-# the third graph is created
-def funcion3():
-    global fig,label2,text_help_1,xtr
-    text_help_1='Activation Energy\nThe "classic" methods, i.e., Fr(, OFW(, KAS( and Vy( remain the same. While the advanced \nmethod of Vyazovkin has suffered some minor modifications. One of them is the possiblity to\n define the parameter $p$, which defines the level of confidence for the error associated to the\n activation energy, being 1 a 100%. Other modifications include the integration method (available \nmethods: trapezoid(default),simpson and romberg). The Romberg method may be a little more\n accurate but takes a lot more of time.  '
-    label2.config(text=text_help_1)
     
-    # Clear the chart frame
-    for widget in frame.winfo_children():
-        widget.destroy()
+    def export_compensation_report(self):
+        """ 
+        View the compensation method data
+        """
+        self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
+        
+        try:
     
-    try:
+            self.compensation = self.ace.compensation_effect(
+                self.compensation_inicio,
+                self.method_used[2],
+                self.method_used[3],
+                error_m=self.compensation_error
+            )
     
-       
-        # Call Conversion and capture the fig
-        fig = xtr.Conversion(
-            300 * np.ones(len(xtr.Beta)),
-            950 * np.ones(len(xtr.Beta))
-        )
-    
-        xtr.Conversion(300*np.ones(len(xtr.Beta)),
-                   950*np.ones(len(xtr.Beta)))
-       
-        # Insert the figure into the frame using FigureCanvasTkAgg
-        canvas = FigureCanvasTkAgg(fig, master=frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        
-        button_graph3.grid_forget()
-        button_graph4.grid(row=1, column=0)    
-
-    except:
-        messagebox.showerror("unexpected error")
-
-
-# the fourth graph is created
-def funcion4():
-    global fig,label2,text_help_1,xtr,ace,isoTables,aVy
-    text_help_1="Pre-exponential factor\nThe pre-exponential factor is computed by means of the so-called compensation effect, which \nimplies a linear relation between the pre-exponential factor and the activation energy:\n $\ln{A}=a+bE$ \nA linear regression is computed over a set of {$E_{i}$,$\ln{A_{i}}$} to obtain the parameters $a$ and $b$.\nThe values of {$E_{i}$,$\ln{A_{i}}$} are obatined from fitting different models $f(\alpha)_{i}$ (defined in the \npicnik.rxn_models submodule) to the experimental data\nAll this information is returned from the ActivationEnergy.compensation_effect method"
-    label2.config(text=text_help_1)
-    # Clear the chart frame
-    for widget in frame.winfo_children():
-        widget.destroy()
-
-    try:
-        # Obtain the data and calculate activation energy
-        isoTables = xtr.Isoconversion(d_a=0.005)
-        ace = pnk.ActivationEnergy(xtr.Beta, xtr.T0, isoTables)
-        aVy = ace.aVy((5, 380), var='time', p=0.90)
-    
-       # Get the figure from Ea_plot()
-        fig = ace.Ea_plot()
-    
-        # Insert the figure into the frame using FigureCanvasTkAgg
-        canvas = FigureCanvasTkAgg(fig, master=frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill='both', expand=True)
-    
-        button_graph4.grid_forget()
-        button_graph5.grid(row=1, column=0)    
-
-    except:
-        messagebox.showerror("unexpected error")
-
-
-# the fifth graph is created
-def funcion5():
-    global fig, canvas,label2,text_help_1,ace,aVy,compensation,isoTables
-    text_help_1 = "--"
-    label2.config(text=text_help_1)
-
-    # Clear the chart frame
-    for widget in frame.winfo_children():
-        widget.destroy()
-
-    try:
-       
-        
-        compensation = ace.compensation_effect(
-            0,
-            aVy[2],
-            aVy[3],
-            error_m='r_Lin'
-        )
-
-        
-        fig = Figure(figsize=(12, 9), dpi=100)
-        ax = fig.add_subplot(111)
-        print("__")
-        print(ace.compensation_effect( 0,
-         aVy[2],
-         aVy[3],
-         error_m='r_Lin'))
-        print("___")
-        
-        
-        ax.errorbar(
-            aVy[0],
-            compensation[0],
-            yerr=compensation[1],
-            fmt='o',
-            color='blue'
-        )
-        ax.set_xlabel(r'$\alpha$')
-        ax.set_ylabel(r'$\ln(A_{\alpha})$')
-        ax.set_title("Compensation Chart")
-        ax.grid(True)
-
-         # Insert the figure into the frame using FigureCanvasTkAgg
-        canvas = FigureCanvasTkAgg(fig, master=frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
-        
-        button_graph5.grid_forget()
-        button_graph6.grid(row=1, column=0)    
-        
-
-    except Exception as e:
-        import traceback
-        label2.config(text=f"Error generating graph:\n{e}")
-        print(traceback.format_exc())
+            if self.compensation is None:
+                print("the compensation effect could not be calculated")
+                return
             
+            rut = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            filetypes=[("files", "*.txt"), ("all files", "*.*")],
+            title="select rute",
+            initialfile="report_compensacion.txt"
+            )
+    
+            # if the user cancels, exit the function
+            if not rut:
+                print("cancel save")
+                return
+    
+            ln_A, errorlnA, a, errora, b, errorb, Afit, Efit, r_sq, mod = self.compensation
+            alpha = self.method_used[0]
+    
+            # write to the selected file
+            with open(rut, "w", encoding="utf-8") as f:
+                f.write("="*50 + "\n")
+                f.write("Compensation report\n")
+                f.write("="*50 + "\n\n")
+    
+                f.write("Compensation parameters:\n\n")
+                f.write(f"slope (a) : {a}\n")
+                f.write(f"Error a : {errora}\n")
+                f.write(f"Interception (b): {b}\n")
+                f.write(f"Error b : {errorb}\n")
+                f.write("\n" + "-"*50 + "\n\n")
+    
+                f.write("Accepted models:\n\n")
+                for i, model in enumerate(mod):
+                    f.write(f"[{i+1}] {model.__name__}\n")
+                    if i < len(Afit): f.write(f"  Afit = {Afit[i]}\n")
+                    if i < len(Efit): f.write(f"  Efit = {Efit[i]}\n")
+                    if i < len(r_sq): f.write(f"  R²   = {r_sq[i]}\n")
+                    f.write("\n")
+    
+                f.write(f"numbers of accepted models: {len(mod)}\n")
+                f.write("\n" + "-"*50 + "\n\n")
+    
+                f.write("summery ln(Aα):\n\n")
+                f.write(f"alpha shape : {np.shape(alpha)}\n")
+                f.write(f"ln_A shape  : {np.shape(ln_A)}\n")
+                f.write(f"error shape : {np.shape(errorlnA)}\n")
+                f.write("\n" + "="*50 + "\n")
+    
+            print(f"save report: {rut}")
+        
+        except Exception as e:
+            messagebox.showerror("error",f"compensation report error {e}")
+
+        
+    def ver_compensation_report(self):
+        """
+        save the compensation method data
+        """
+        self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
+    
+        try:
+            # calculate the effect of the compensation
+            self.compensation = self.ace.compensation_effect(
+                self.compensation_inicio,
+                self.method_used[2],
+                self.method_used[3],
+                error_m=self.compensation_error
+            )
+    
+            if self.compensation is None:
+                print("the compensation effect could not be calculated")
+                return
+            
+            ln_A, errorlnA, a, errora, b, errorb, Afit, Efit, r_sq, mod = self.compensation
+            alpha = self.method_used[0]
+    
+            rep_text = ""
+            rep_text += "Compensation report\n"
+            rep_text += "Compensation parameters:\n\n"
+            rep_text += f"slope (a) : {a}\n"
+            rep_text += f"Error a : {errora}\n"
+            rep_text += f"Interception (b): {b}\n"
+            rep_text += f"Error b : {errorb}\n"
+            rep_text += "\n"
+    
+            rep_text += "Accepted models:\n\n"
+            for i, model in enumerate(mod):
+                rep_text += f"[{i+1}] {model.__name__}\n"
+                if i < len(Afit): rep_text += f"  Afit = {Afit[i]}\n"
+                if i < len(Efit): rep_text += f"  Efit = {Efit[i]}\n"
+                if i < len(r_sq): rep_text += f"  R²   = {r_sq[i]}\n"
+                rep_text += "\n"
+    
+            rep_text += f"numbers of accepted models: {len(mod)}\n"
+            rep_text += "\n" + "-"*50 + "\n\n"
+    
+            rep_text += "summery ln(Aα):\n\n"
+            rep_text += f"alpha shape : {np.shape(alpha)}\n"
+            rep_text += f"ln_A shape  : {np.shape(ln_A)}\n"
+            rep_text += f"error shape : {np.shape(errorlnA)}\n"
+            rep_text += "\n"
+    
+            # text view
+            self.fig = Figure(figsize=(7, 8), dpi=100)
+            ax = self.fig.add_subplot(111)
+            
+            # hide everything except the text
+            ax.axis('off')
+    
+            # text position
+            ax.text(
+                0.02, 0.98, 
+                rep_text, 
+                fontsize=9, 
+                family='monospace', # Obligatorio para que los caracteres ocupen el mismo ancho
+                verticalalignment='top',
+                horizontalalignment='left',
+                transform=ax.transAxes # Usa coordenadas relativas del eje (0 a 1)
+            )
+    
+            self.fig.tight_layout()
+            
+
+            self.draw_fig()
+            
+        except Exception as e:
+            messagebox.showerror("error",f"compensation report error {e}")
+
+
+
+    def ver_recontruction(self):
+        """ 
+        This method is called picnik reconstruction method
+        """
+        
+        try:
+        # clean frame
+            for widget in self.frame_grafico.winfo_children():
+                widget.destroy()
+    
+            self.fig, self.g_a = self.ace.reconstruction(
+                self.method_used[2],
+                np.exp(self.compensation[0]),
+                self.Beta[self.compensation_inicio]
+                
+            )
+    
+            self.draw_fig()
+
+        except Exception as e:
+            messagebox.showerror("error",f"reconstruction error {e}")
+
+           
+
+    
+    def export_data_ea(self):
+        """
+        Activation energy data is exported
+        """
+        
+        try:
+            if self.ace.export_Ea(): 
+                messagebox.showinfo("correct", "data exported successfully")
+            else: 
+                print("save cancel.")
+        except Exception as e:
+            messagebox.showerror("error",f"export files error {e}")
+
+
+           
+
+    def save_kinetic_triplet(self):
+        """
+        This method exports the kinetic data: activation energy, 
+        natural logarithm of the pre-exponential factor, and reaction model.
+        """
+    
+        try:
+            
+            "Kinetic triplet"
+            if self.ace.export_kinetic_triplet(self.method_used[0][1::], self.method_used[2][1::], self.compensation[0][1::], self.g_a, name="kinetic_triplet.csv" ):
+                messagebox.showinfo("correct","data exported successfull")
+            else:
+                print("save cancel")
+        except Exception as e:
+            messagebox.showerror("error",f"export files error {e}")
+
+
    
-    
-# the sixth graph is created
-def funcion6():
-    global fig,label2,text_help_1,ace,isoTables,aVy,compensation,g_a
-    text_help_1 = (
-        "As noted by inspection of the plot of $\ln{A}$ vs $\alpha$, the value of $\ln{A}$ (~ 10.6) differs from the progammed one (12), giving thus an unreliable reconstruction, which is why g_r doesn reproduced the simulated data. If one uses the programmed value for $\ln{A}$ and the computed values with the `aVy(` method (g_r2) there is still a discrepancy between the computed data and the real model. Finally, by using the average of the activation energy array (g_r3) we recover the simulated model. The moral is, the `compensation_effect(` (as programmed in picnik) is unreliable and if you wish to recompute numerically $g(\alpha)$, you need to be sure that the process is single step and use the averge activation energy. Isothermal prediction For this example, the conversion as a function of time is given by: $\alpha(t) = 1-\exp{[-A\exp(-\frac{E}{RT})t]} $ We compare the results of the computed predictions with three picnik methods, each based on a different equation: a) Model based prediction:          $t_{\alpha_{i}} = \frac{\sum_{i}g(\alpha_{i})}{A\exp{(-\frac{E}{RT_{0}})}}$   ...(1) b) Isoconversion prediction A:      $t_{\alpha_{i}} = \frac{\int_{t_{\alpha_{0}}}^{t_{\alpha_{i}}}\exp(-\frac{E}{RT(t)})}{\exp{(-\frac{E}{RT_{0}})}}$   ...(2) c) Isoconversion prediction B:      $J[E_{\alpha},T(t)]=J[E_{\alpha},T_{0}]$   ...(3) As it can be seen from the expressions above, the methods do not compute conversion as a funciton of time, but they compute the time required to reach a given conversion The next three cells have the following contents:The first one, defines conversion as a function of time according to the F1 model and creates tima and conversion arrays ti plot. The second one has the three tipes of prediction according to the equations above The third one is a plot of the predictions and the model It is clear that all three equations give accurate isothermal predictions. Althoug we recommend the one of equation (3) as it implies less assumptions about the process"    
-    )
-    label2.config(text=text_help_1)
+    def save_image_picnik(self): 
+        """
+        Save the canvas images to a user-selected folder on your computer.
+        """
+        if self.fig is None:
+            messagebox.showwarning("save image", "No image to save.")
+            return
 
-    # Clear the chart frame
-    for widget in frame.winfo_children():
-        widget.destroy()
-
-    try:
-            
-       # Get data and calculate
-      
-        compensation = ace.compensation_effect(
-            0,
-            aVy[2],
-            aVy[3],
-            error_m='r_Lin'
+        file = filedialog.asksaveasfilename(
+            #defaultextension=".png",
+            filetypes=[("SVG files", "*.svg"),
+                    ("PNG files", "*.png")
+                    ]
         )
-    
-        # Get figure and g(alpha) from reconstruction method
-        fig, g_a = ace.reconstruction(
-            aVy[2],
-            np.exp(compensation[0]),
-            xtr.Beta[0]
-        )
-    
-       # Insert the figure into the frame using FigureCanvasTkAgg
-        canvas = FigureCanvasTkAgg(fig, master=frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
-    
-        button_graph6.grid_forget()
-        button_graph7.grid(row=1, column=0)    
-    
-    except:
-        messagebox.showerror("unexpected error")
-
-
-
-
-def alpha_F1_iso(t,A,E,isoT):
-    
-    return 1- np.exp(-A*np.exp(-E/(0.0083144626*isoT))*t)
-
-
-
-# the seventh graph is created
-def funcion7():
-    global fig, aVy, g_a,compensation,ace
-
-    text_help_1 = (
-        "-----"
-    )
-    label2.config(text=text_help_1)
-
-    # Clear the chart frame
-    for widget in frame.winfo_children():
-        widget.destroy()
-    
-    try:    
-    
-        isoTables = xtr.Isoconversion(d_a=0.005)
-        ace = pnk.ActivationEnergy(xtr.Beta, xtr.T0, isoTables)    
-    
-        # Create a new figure 
-        fig = Figure(figsize=(6, 4), dpi=100)
-        ax = fig.add_subplot(111)
-    
-        time = np.linspace(0, 200, len(aVy[0]))  # Time arrays to compute the theoretical conversion values
-        alp = alpha_F1_iso(time, np.exp(12), 75, 575)  # Theoretical conversion
-    
-        # Predictions
-        tim_pred1 = ace.t_isothermal(aVy[2], compensation[0], 575, col=0, g_a=g_a, alpha=aVy[0])  # eq (1)
-        tim_pred2 = ace.t_isothermal(aVy[2], compensation[0], 575, col=0, isoconv=True)           # eq (2)
-        ap, Tp, tp = ace.modelfree_prediction(aVy[2], B=0, isoT=575, alpha=0.999, bounds=(10, 10))  # eq (3)
-        print("tim_pred1:", tim_pred1)
-        print("type(tim_pred1):", type(tim_pred1))
-        
-        ax.plot(time, alp, alpha=0.5, label=r'$\alpha(t) = 1-\exp{[-A\exp(-\frac{E}{RT})t]}$')
-        ax.plot(tim_pred1[::13], aVy[0][::13], '<', c='#966B60', label='eq (1)')
-        ax.plot(tim_pred2[::7], aVy[0][1:-1:7], '.', c='#169C09', label='eq (2)')
-        ax.plot(tp[::8], ap[::8], '*', c='#EB6A49', label='eq (3)')
-    
-        ax.legend()
-        ax.set_xlabel('Time (min)')
-        ax.set_ylabel('Conversin α')
-        ax.set_title('Comparison of prediction methods')
-    
-        # Insert the figure into the frame using FigureCanvasTkAgg
-        canvas = FigureCanvasTkAgg(fig, master=frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
+        if file:
+            self.fig.savefig(file, dpi=300, bbox_inches='tight')
+            messagebox.showinfo("save image", f"Chart saved in:\n{file}")
             
-        button_graph7.grid_forget()
-        button_graph8.grid(row=1, column=0)          
 
-    except:
-        messagebox.showerror("unexpected error")
+    def about_picnik(self):
+        """
+        Link to picnik project information
+        """
+        messagebox.showinfo("about", "picnik aplicacion\nVersion 1.0\n https://doi.org/10.1016/j.cpc.2022.108416")
+    
+    
         
+    def function_tutorial(self):
+        """
+        Open a PDF with a tutorial on how to use the application.
+        """
+        if hasattr(sys, '_MEIPASS'):
+            # if it's already compiled with PyInstaller, use the temporary folder
+            base_path = sys._MEIPASS
+        else:
+            # for IDE
+            base_path = os.path.dirname(os.path.abspath(__file__))
+            
+        rut_orig = os.path.join(base_path, "tutorial.pdf")
+                 
+        if sys.platform.startswith('darwin'):  # macOS
+            subprocess.Popen(['open', rut_orig])
+            
+        elif os.name == 'nt':  # Windows
+            os.startfile(rut_orig)
+            
+        elif os.name == 'posix':  # Linux
+            try:
+                if not os.path.exists(rut_orig):
+                    print(f"Error: no file in: {rut_orig}")
+                    return
+                
+                #Gets the actual path of Documents dynamically based on the language
+                import subprocess
+                try:
+                    resultado = subprocess.run(["xdg-user-dir", "DOCUMENTS"], capture_output=True, text=True, check=True)
+                    carpeta_usuario = resultado.stdout.strip()
+                except Exception:
+                    # Alternative if xdg-user-dir fails
+                    carpeta_usuario = os.path.expanduser("~/Documents")
+                
+                os.makedirs(carpeta_usuario, exist_ok=True)
+                rut_dest = os.path.join(carpeta_usuario, "Manual_Tutorial.pdf")
+                
+                shutil.copy2(rut_orig, rut_dest)
+                
+                enviroment_clean = dict(os.environ)
+                if 'LD_LIBRARY_PATH_ORIG' in enviroment_clean:
+                    enviroment_clean['LD_LIBRARY_PATH'] = enviroment_clean.pop('LD_LIBRARY_PATH_ORIG')
+                elif 'LD_LIBRARY_PATH' in enviroment_clean:
+                    enviroment_clean.pop('LD_LIBRARY_PATH')
+                    
+                subprocess.Popen(["xdg-open", rut_dest], env=enviroment_clean)
+                print(f"open PDF from: {rut_dest}")
+            
+            except Exception as e:
+                messagebox.showerror("error",f"open files in linux {e}")
+                
+ 
 
 
-# the eighth graph is created
-def funcion8():
-    global fig, ace,ap2, Tp2, tp2 
-
-    text_help_1 = (
-        "-------"
-    )
-    label2.config(text=text_help_1)
-
-    # Clear the chart frame
-    for widget in frame.winfo_children():
-        widget.destroy()
-    
-    try:    
-        
-        #create a new figure
-        fig = Figure(figsize=(6, 4), dpi=100)
-        ax = fig.add_subplot(111)
-    
-        # Prediction
-        ap2, Tp2, tp2 = ace.modelfree_prediction(aVy[2], B=10, alpha=0.999, bounds=(10, 10))
-    
-       
-        ax.plot(tp2, ap2, '.', label='Prediction')
-        ax.plot(xtr.t[1], xtr.alpha[1], label="'Experimental data' (simulated)")
-    
-        ax.set_ylabel(r'Conversion ($\alpha$)')
-        ax.set_xlabel('Time [min]')
-        ax.legend(loc='upper left')
-    
-        # Insert the figure into the frame using FigureCanvasTkAgg
-        canvas = FigureCanvasTkAgg(fig, master=frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
-        
-        button_graph8.grid_forget()
-        button_open_files.grid(row=1, column=0)    
-        
-
-
-    except:
-        messagebox.showerror("unexpected error")
-
-
-
-# application name and version
-def about():    
-    messagebox.showinfo("about", "picnik aplicacion\nVersion 1.0\n https://doi.org/10.1016/j.cpc.2022.108416")
-    
-    
-    
-# save file    
-def save_files():
-    
-    try:
-        global ace,ap2, Tp2, tp2 
-    
-        """ Activation energy """
-        ace.export_Ea()
-        "Kinetic triplet"
-        ace.export_kinetic_triplet(aVy[0][1::], aVy[2][1::], compensation[0][1::], g_a, name="kinetic_triplet.csv" )
-        "Prediction"
-        ace.export_prediction(ap2,Tp2,tp2)
-       
-    except:
-        messagebox.showwarning("save file", "There is no file to save..")
-
-
-
-#save graph
-def save_graph():
-    global fig
-    if fig is None:
-        messagebox.showwarning("save graph", "No graph to save.")
-        return
-
-    file = filedialog.asksaveasfilename(
-        #defaultextension=".png",
-        filetypes=[("SVG files", "*.svg"),
-                   ("PNG files", "*.png")
-                   ]
-    )
-    if file:
-        fig.savefig(file, dpi=300, bbox_inches='tight')
-        messagebox.showinfo("save graph", f"Chart saved in:\n{file}")
-        
-        
-        
-#tutorial
-def tutorial():
-   
-    if sys.platform.startswith('darwin'):  # macOS
-        subprocess.call(('open',"tutorial.pdf"))
-    elif os.name == 'nt':  # Windows
-        os.startfile("tutorial.pdf")
-    elif os.name == 'posix':  # Linux
-        subprocess.call(('xdg-open',"tutorial.pdf"))
-
-
-#exit the application
-def salir():
-    root.destroy()
-
-        
-
-root.mainloop()
+if __name__ == "__main__":
+    app = Aplicacion()
+    app.mainloop()

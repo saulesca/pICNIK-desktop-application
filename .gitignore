@@ -1,0 +1,13 @@
+" Archivos temporales de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Configuracion de Spyder
+.spyproject/
+.spyderproject/
+
+# Entornos virtuales locales
+venv/
+.venv/
+env/

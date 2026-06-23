@@ -1,11 +1,8 @@
-# picnik desktop application
+## pICNIK is a module with isoconversional calculations implemented for non-isothermal kinetics.
 
-##pICNIK is a module with implemented isoconversional computations for non-isothermal kinetcis.
-##The package has an object oriented interface with two classes:DataExtraction and ActivationEnergy, with the purpose of managing the experimental data and computing ##activation energies with the next isoconversional methods:
+## This application generates an intuitive graphical interface for using the methods in the pICNIK library.
 
-  -  Ozawa-Flynn-Wall (OFW)\
-  - Kissinger-Akahira-Sunose (KAS)\
-  -  Friedman (Fr)\
-  -  Vyazovkin (Vy)\
-  -  Advanced method of Vyazovkin (aVy)\
-  
+## For more information, please visit https://github.com/ErickErock/pICNIK
+
+
+
