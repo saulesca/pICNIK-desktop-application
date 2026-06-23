@@ -13,7 +13,7 @@ pip install --upgrade pip
 echo "Instalando dependencias..."
 pip install matplotlib numpy pandas scipy seaborn chardet picnik-integrator rxnmodel pyinstaller #despues intentar quitar pillow para si por eso salen ventanas en la aplicacion
 
-pip freeze > requeriments.txt
+# pip freeze > requeriments.txt
 
 echo "Limpiando builds anteriores..."
 rm -rf build dist ventana_principal.spec
