@@ -242,7 +242,7 @@ class DataExtraction:
                                label=rf'$\beta$={Beta[i]:.1f} K/min')
                 axs[1][0].legend(fontsize=10)
                 axs[1][0].set_xlabel('Temperature [K]',fontsize=14)
-                axs[1][0].set_ylabel('DTG [%]',fontsize=14)  #  cambie mass por TG
+                axs[1][0].set_ylabel('TG [%]',fontsize=14)  #  cambie mass por TG
             # mass loss rate vs temperature
             for i in range(len(DFlis)):
                 axs[1][1].plot(DFlis[i]['Temperature [K]'],
@@ -1595,7 +1595,7 @@ class ActivationEnergy:
         print(f'Done.')
         return self.E_aVy
 #-----------------------------------------------------------------------------------------------------------
-    def Ea_plot(self, errorbar=True, xlim=(0.05,0.95), ylim=(0,300), saveplot=False, name=None):
+    def Ea_plot(self, errorbar=True, xlim=(0.05-.2,0.95+.2), ylim=(0-20,300+20), saveplot=False, name=None):
         """ method to plot the activation energy vs conversion
 
         Parameters:     errorbar: Bool. If True, the errorbar is plotted. Only y-values are plotted otherwise.
@@ -1664,7 +1664,6 @@ class ActivationEnergy:
         ax.set_ylabel(r'$E_{\alpha}$')
         ax.legend()
         ax.grid(True)
-    
         #if saveplot:
         #    fig.savefig(name)
     

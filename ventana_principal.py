@@ -67,7 +67,7 @@ class Aplicacion(tk.Tk):
         self.isoTables=None    
         self.resultado=None   
         self.methods=""
-        self.compensation_inicio=0
+        self.compensation_inicio=None
         self.compensation_error='r_Lin'
         self.ace=None
         self.g_a=None
@@ -82,10 +82,13 @@ class Aplicacion(tk.Tk):
         self.datos_array=None
         self.DFlis=None
         self.number_max=0
+        self.number_min=0
         self.nombres_aux=[]
         self.one_step_aux=[]
-           
-
+        self.conversion_aux=0   
+        self.menu_start=None
+        self.menu_start2=None
+        self.compensation_alphaE=None
         self._configurar_menu()
 
        
@@ -111,7 +114,7 @@ class Aplicacion(tk.Tk):
         self.config_fases = {
             1: [("Open Files", self.open_files)],
             2: [("time(m) vs TG(%)", self.g1), ("time(m) vs DGT(%/m)",self.g2),("time(m) vs dT/dt(K/m)", self.g3),("temp[K] vs TG[%] ", self.g4),("temp[K] vs DTG[%/m]", self.g5),("temp[K] vs dT/dt[K/m]", self.g6)],
-            3: [("Thermogram", self.g4), ("Enter initial temperatures", self.input_temp_i)],
+            3: [("Thermogram", self.g4), ("Enter temperatures", self.input_temp_i)],
             4: [("Conversion", self.conversion)],
             5: [("Isoconversion step", self.input_data_isoconversion),    ("Isoconversion", self.mostrar_opciones)],
             6:[("Options of activation energy", self.methods_menu),("Select activation energy method", self.chose_method_isoconversion),("Export activation energy data", self.export_data_ea)],
@@ -244,7 +247,7 @@ class Aplicacion(tk.Tk):
         self.isoTables=None    
         self.resultado=None   
         self.methods=""
-        self.compensation_inicio=0
+        self.compensation_inicio=None
         self.compensation_error='r_Lin'
         self.ace=None
         self.g_a=None
@@ -259,9 +262,14 @@ class Aplicacion(tk.Tk):
         self.datos_array=None      
         self.DFlis=None
         self.number_max=0
+        self.number_min=0
         self.nombres_aux=[]
         self.resultado=[]
-
+        self.conversion_aux=0
+        self.menu_start=None
+        self.menu_start2=None
+        self.compensation_alphaE=None
+        
         #################################################################################
 
     
@@ -299,17 +307,12 @@ class Aplicacion(tk.Tk):
             if len(files) > 1:
                 self.one_step_aux.clear()
                 self.one_step_aux.extend(files)
-                print("selected files:")
                 for file in self.one_step_aux:
                     print("-------------------")
-                    print(file)
-                    print("-------------------")
-                    
                 
                 # Guarda el número de archivos
                 self.numero_de_archivos = len(files)    
             else:
-                print("No file selected o menos de 2 archivos.")
                 messagebox.showinfo(
                     title="Two or more files, please",
                     message="Two or more files, please"
@@ -327,9 +330,7 @@ class Aplicacion(tk.Tk):
                     # 3. Leemos las columnas con la codificación detectada
                     df = pd.read_csv(file, nrows=0, skipinitialspace=True, encoding=codificacion, sep=r'[\t,;]+', engine='python')
                     columnas = df.shape[1]
-                    
-                    print(f"Archivo: {file} | Codificación: {codificacion} (Confianza: {confianza}) | Columnas: {columnas}")
-                    
+                        
                     if columnas != 3:
                         estado = 1
                         break 
@@ -438,12 +439,8 @@ class Aplicacion(tk.Tk):
                 self.one_step = sorted(self.one_step_aux, key=extraer_numero_de_ruta)
 
                 self.fig, self.Beta, self.T0, self.DFlis = self.xtr.read_files(self.one_step, encoding=self.encoding_final)
-                print("----------------------")
-                print(self.one_step)
-                print("----------------------")
-                
+              
                 #review each DataFrame in the list
-                
                 array_DFlis = []
                 limite_archivos = min(len(self.DFlis), self.numero_de_archivos)
                 
@@ -453,16 +450,23 @@ class Aplicacion(tk.Tk):
                         
                         valores_numericos = pd.to_numeric(self.DFlis[i].iloc[:, 4], errors='coerce')
                         max_valor = valores_numericos.max()
-                        
+                        min_valor = valores_numericos.min()
                         if pd.notna(max_valor):
                             array_DFlis.append(int(max_valor))
+                        if pd.notna(min_valor):
+                            array_DFlis.append(int(min_valor))
+                            
+                            
                     except Exception:
                         pass
                 
                 if array_DFlis:
                     self.number_max = max(array_DFlis)
+                    self.number_min = min(array_DFlis)
+                    
                 else:
                     self.number_max = 0
+                    self.number_min = 0
                 
                 self.draw_fig()
 
@@ -470,7 +474,88 @@ class Aplicacion(tk.Tk):
                 # unespected error
                 messagebox.showerror("error", f" Non-numeric data was detected, please check your files,  {str(e)}")
 
+    
+
+    #--------------------------------------------------------------------------
+   
+            
+    def view_limits(self):
+            """
+            It is verified that the files have the same encoding; if so,
+            the encoding is passed to the `read files` method; otherwise, an error message is sent.
+            A `Data extraction` class object is created, and
+            the variables `fig`, `Beta`, `T0`, and `DFlist` are received, drawing six
+            support graphs for analysis and calculations.
+            """
+            
+            try:
+              
+               # data extraction and figure generation
+                self.xtr = pnk.DataExtraction()
+                
+                # Function that isolates the file name to avoid including periods in the extension or paths
+                
+                def extraer_numero_de_ruta(ruta_completa):
+                    
+                    # extract only the final name
+                    nombre_archivo = os.path.basename(ruta_completa)
+                   
+                    # remove the extension
+                    nombre_sin_extension, _ = os.path.splitext(nombre_archivo)
+                    
+                    # extract only digits and periods from the clean name
+                    solo_numeros = "".join(re.findall(r'[0-9.]', nombre_sin_extension))
+                    try:
+                        return float(solo_numeros)
+                    except ValueError:
+                        return float('inf') # Manda al final si algo sale mal
+
+                #ordering
+                self.one_step = sorted(self.one_step_aux, key=extraer_numero_de_ruta)
+
+                self.fig, self.Beta, self.T0, self.DFlis = self.xtr.read_files(self.one_step, encoding=self.encoding_final)
+              
+            
+                #review each DataFrame in the list
+                array_DFlis = []
+                limite_archivos = min(len(self.DFlis), self.numero_de_archivos)
+                
+                for i in range(limite_archivos):
+                    try:
+                        # Extract the maximum from column 4, safely converting to numeric
+                        
+                        valores_numericos = pd.to_numeric(self.DFlis[i].iloc[:, 4], errors='coerce')
+                        max_valor = valores_numericos.max()
+                        min_valor = valores_numericos.min()
+                        if pd.notna(max_valor):
+                            array_DFlis.append(int(max_valor))
+                        if pd.notna(min_valor):
+                            array_DFlis.append(int(min_valor))
+                            
+                            
+                    except Exception:
+                        pass
+                
+                if array_DFlis:
+                    self.number_max = max(array_DFlis)
+                    self.number_min = min(array_DFlis)
+                    
+                else:
+                    self.number_max = 0
+                    self.number_min = 0
+                
+                #self.draw_fig()
+                
+            except Exception as e:
+                # unespected error
+                messagebox.showerror("error", f" Non-numeric data was detected, please check your files,  {str(e)}")        
+
+    #--------------------------------------------------------------------------
+    
+    
+
     #------------view images-------------------------------
+    
 
     def g1(self):
         """
@@ -532,159 +617,185 @@ class Aplicacion(tk.Tk):
         except:
             messagebox.showerror("Error", "There is no data to generate the figure")
         
-    
     def input_temp_i(self):
         """
         The user enters initial and final temperature values that are saved in two arrays that the 
         Conversion function will need
         """
-        
-        ventana = tk.Toplevel()
-        ventana.title("Enter limits")
-        ventana.geometry("440x340")
-        arreglo2=[]
-        def solo_enteros(nuevo_texto):
-            return nuevo_texto == "" or nuevo_texto.isdigit()
-        
-        validador = ventana.register(solo_enteros)
-
-        
-        # -------- CONTENEDOR Y SCROLL --------
-        main_frame = ttk.Frame(ventana)
-        main_frame.pack(fill="both", expand=True)
-        canvas = tk.Canvas(main_frame)
-        
-        label1=ttk.Label(main_frame, text="initial temperature(K)                   end temperature(K)" )
-        label1.pack()
-        
-        scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
-        frame = ttk.Frame(canvas)
-        frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.create_window((0, 0), window=frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-
-        entries_a1, entries_a2 = [], []
-        vars_a1, vars_a2 = [], []
-
-        def crear_fila(i):
-            fila = ttk.Frame(frame)
-            fila.grid(row=i, column=0, pady=5, padx=10, sticky="ew")
-            ttk.Label(fila, text=f"β {self.Beta[i].round(2)}", width=10).grid(row=0, column=0)
-
-            var1 = tk.IntVar(value=int(self.number_max/2))
-            entry1 = ttk.Entry(fila, width=5, validate="key", validatecommand=(validador, "%P"))
-            entry1.grid(row=0, column=2)
-            entry1.insert(0, int(self.number_max/2))
-
+       
+        if self.one_step != []:
             
-            def actualizar_minimo(val):
-                v = int(float(val))
-                scale2.config(from_=v)
-                entry1.delete(0, tk.END)
-                entry1.insert(0, str(v))
-                var1.set(v)
-    
-                if scale2.get() < v:
-                    scale2.set(v)
+            self.view_limits()
+            
+            ventana = tk.Toplevel()
+            ventana.title("Enter limits")
+            ventana.geometry("440x340")
+            arreglo2 = []
+            
+            def solo_enteros(nuevo_texto):
+                return nuevo_texto == "" or nuevo_texto.isdigit()
+            
+            validar = ventana.register(solo_enteros)
+            
+            main_frame = ttk.Frame(ventana)
+            main_frame.pack(fill="both", expand=True)
+            canvas = tk.Canvas(main_frame)
+            
+            label1 = ttk.Label(main_frame, text="initial temperature(K)                   end temperature(K)")
+            label1.pack()
+            
+            scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
+            frame = ttk.Frame(canvas)
+            frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+            canvas.create_window((0, 0), window=frame, anchor="nw")
+            canvas.configure(yscrollcommand=scrollbar.set)
+            canvas.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
+            
+            entries_a1, entries_a2 = [], []
+            vars_a1, vars_a2 = [], []
+            
+            # limits
+            limite_medio_inf = int((self.number_min + self.number_max) / 2)
+            limite_medio_sup = limite_medio_inf + 1
+            
+            def crear_fila(i):
+                fila = ttk.Frame(frame)
+                fila.grid(row=i, column=0, pady=5, padx=10, sticky="ew")
+                ttk.Label(fila, text=f"β {self.Beta[i].round(2)}", width=10).grid(row=0, column=0)
                 
                 
-            scale1 = ttk.Scale(fila, from_=0, to=self.number_max, orient="horizontal", variable=var1, command=actualizar_minimo)
-            scale1.grid(row=0, column=1, padx=5, sticky="ew")
-
-            def update_scale1(event):
-                t = entry1.get()
-                if t.isdigit():
-                    val = int(t)
-                    if 0 <= val <= int(self.number_max): var1.set(val)
-
-            entry1.bind("<KeyRelease>", update_scale1)
-
-            var2 = tk.IntVar(value=int((self.number_max+self.number_max/2)))
-            entry2 = ttk.Entry(fila, width=5, validate="key", validatecommand=(validador, "%P"))
-            entry2.grid(row=0, column=4)
-            entry2.insert(0, int((self.number_max+self.number_max/2)))
-
-            def mover_scale2(val):
-                v = int(float(val))
-                entry2.delete(0, tk.END)
-                entry2.insert(0, str(v))
-                var2.set(v)
-
-            scale2 = ttk.Scale(fila, from_=0, to=4*(self.number_max), orient="horizontal", variable=var2, command=mover_scale2)
-            scale2.grid(row=0, column=3, padx=5, sticky="ew")
-
-            def update_scale2(event):
-                t = entry2.get()
-                if t.isdigit():
-                    val = int(t)
-                    if self.number_max+1 <= val <= 4*(self.number_max): var2.set(val)
-
-            entry2.bind("<KeyRelease>", update_scale2)
-
-            vars_a1.append(var1); vars_a2.append(var2)
-            entries_a1.append(entry1); entries_a2.append(entry2)
-
-        for i in range(self.numero_de_archivos): crear_fila(i)
-
-        # -------- validation --------
-        
-        def obtener():
-            for i in range(self.numero_de_archivos):
-                val1_str = entries_a1[i].get()
-                val2_str = entries_a2[i].get()
-                arreglo2.append(entries_a2[i].get())
+                val_inicial_1 = int((self.number_min + ((self.number_min + self.number_max) / 2)) / 2)
+                var1 = tk.IntVar(value=val_inicial_1)
                 
+                entry1 = ttk.Entry(fila, width=5, validate="key", validatecommand=(validar, "%P"))
+                entry1.grid(row=0, column=2)
+                entry1.insert(0, str(val_inicial_1))
                 
-                # see empty
-                
-                if val1_str == "" or val2_str == "":
-                    messagebox.showwarning("Error", f"Empty box in the row {i+1}")
-                    arreglo2.clear()
-                    return
+                def mover_scale1(val):
+                    v = int(float(val))
+                    entry1.delete(0, tk.END)
+                    entry1.insert(0, str(v))
+                    var1.set(v)
                     
-
-                #  verify ranges
+                scale1 = ttk.Scale(fila, from_=self.number_min, to=limite_medio_inf, orient="horizontal", variable=var1, command=mover_scale1)
+                scale1.grid(row=0, column=1, padx=5, sticky="ew")
                 
-                v1, v2 = int(val1_str), int(val2_str)
-                if not (0 <= v1 <= self.number_max):
-                    messagebox.showerror("out of range", f"In row {i+1}, the first value ({v1}) must be between 0 and {self.number_max}.")
-                    arreglo2.clear()
-                    return
-                if not (v1 <= v2):
-                    messagebox.showerror("out of range", f"In row {i+1}, the second value {v2} must be greater than the first value {v1}")
-                    arreglo2.clear()
-                    return
+                def update_scale1(event):
+                    t = entry1.get()
+                    if t.isdigit():
+                        val = int(t)
+                        if self.number_min <= val <= limite_medio_inf:
+                            var1.set(val)
+                            
+                entry1.bind("<KeyRelease>", update_scale1)
+                
+                val_inicial_2 = int((((self.number_min + self.number_max) / 2) + self.number_max)/2)
+                var2 = tk.IntVar(value=val_inicial_2)
+                
+                entry2 = ttk.Entry(fila, width=5, validate="key", validatecommand=(validar, "%P"))
+                entry2.grid(row=0, column=4)
+                entry2.insert(0, str(val_inicial_2))
+                
+                def mover_scale2(val):
+                    v = int(float(val))
+                    entry2.delete(0, tk.END)
+                    entry2.insert(0, str(v))
+                    var2.set(v)
                     
-            self.fix1_conversion=[v.get() for v in vars_a1]
+                scale2 = ttk.Scale(fila, from_=limite_medio_sup, to=self.number_max, orient="horizontal", variable=var2, command=mover_scale2)
+                scale2.grid(row=0, column=3, padx=5, sticky="ew")
+                
+                def update_scale2(event):
+                    t = entry2.get()
+                    if t.isdigit():
+                        val = int(t)
+                        if limite_medio_sup <= val <= self.number_max:
+                            var2.set(val)
+                            
+                entry2.bind("<KeyRelease>", update_scale2)
+                
+                vars_a1.append(var1)
+                vars_a2.append(var2)
+                entries_a1.append(entry1)
+                entries_a2.append(entry2)
             
-            # convert to integers
-            self.fix2_conversion=[int(v) for v in arreglo2 if v.isdigit()]
+            for i in range(self.numero_de_archivos): 
+                crear_fila(i)
+                
+            # validando datos
+            def obtener():
+                
+                arreglo2.clear() 
+                
+                for i in range(self.numero_de_archivos):
+                    val1_str = entries_a1[i].get()
+                    val2_str = entries_a2[i].get()
+                    arreglo2.append(val2_str)
+                    
+                    #campos vacíos
+                    if val1_str == "" or val2_str == "":
+                        messagebox.showwarning("Error", f"Empty box in the row {i+1}")
+                        arreglo2.clear()
+                        return
+                    
+                    # limit
+                    v1, v2 = int(val1_str), int(val2_str)
+                    if not (self.number_min <= v1 <= limite_medio_inf):
+                        messagebox.showerror("Out of range", f"In row {i+1}, the first value ({v1}) must be between {self.number_min} and {limite_medio_inf}.")
+                        arreglo2.clear()
+                        return
+                    if not (limite_medio_sup <= v2 <= self.number_max):
+                        messagebox.showerror("Out of range", f"In row {i+1}, the second value ({v2}) must be between {limite_medio_sup} and {self.number_max}.")
+                        arreglo2.clear()
+                        return
+                    if not (v1 < v2):
+                        messagebox.showerror("Out of range", f"In row {i+1}, the second value {v2} must be strictly greater than the first value {v1}")
+                        arreglo2.clear()
+                        return
+                    
+                self.fix1_conversion = [v.get() for v in vars_a1]
+                
+                
+                self.fix2_conversion = [int(v) for v in arreglo2 if v.isdigit()]
+                
+                messagebox.showinfo("Saved", "All values are within range and have been saved.")
+                ventana.destroy()
+                
+            boton_frame = ttk.Frame(ventana)
+            boton_frame.pack(fill="x")
+            ttk.Button(boton_frame, text="Save values", command=obtener).pack(pady=10)
             
-            print("a1: ", [v.get() for v in vars_a1])
-            print("a2: ",self.fix2_conversion)
-            
-            messagebox.showinfo("Saved", "All values ​​are within range and have been saved.")
-            ventana.destroy()
+        else:
+            messagebox.showinfo("open files", "open files, please")
 
-        boton_frame = ttk.Frame(ventana)
-        boton_frame.pack(fill="x")
-        ttk.Button(boton_frame, text="Save values", command=obtener).pack(pady=10)
+         
+         
+
+             
 
    
     def conversion(self):
         """
         the picnik conversion function is executed
         """
-        try:
-           
-            self.fig=self.xtr.Conversion(self.fix1_conversion,self.fix2_conversion)
-            self.draw_fig()
-
-        except Exception as e:
+        if self.one_step == []:
+            messagebox.showinfo("open files", "open files, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input initial temperature, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input final temperature, please")
             
-            messagebox.showerror("Unexpected error", f"Details: {str(e)}")
+        else:
+            try:
+               
+                self.fig=self.xtr.Conversion(self.fix1_conversion,self.fix2_conversion)
+                self.conversion_aux=1
+                self.draw_fig()
+    
+            except Exception as e:
+                
+                messagebox.showerror("Unexpected error", f"Details: {str(e)}")
 
     #-----------------------------------------------------------------------------------#
 
@@ -692,60 +803,72 @@ class Aplicacion(tk.Tk):
         """
         The user saves the Δα value that they deem appropriate.
         """
-        fuente = ("Helvetica", 12, "bold")
+        if self.one_step == []:
+            messagebox.showinfo("open files", "open files, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input initial temperature, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input final temperature, please")
+        elif self.conversion_aux==0:
+            messagebox.showinfo("conversion", "execute conversion, please")
+              
+        else:
         
-        ventana_isoconversion = tk.Toplevel(self)
-        ventana_isoconversion.title("Input data")
-        ventana_isoconversion.geometry("400x450")
-        ventana_isoconversion.resizable(False, False)
-
-        # --- d_a ---
-        def validar_entrada(texto_nuevo):
-            # Allows you to delete the field completely
+            fuente = ("Helvetica", 12, "bold")
             
-            if texto_nuevo == "":
-                return True
-                
-            # only digits and at most one decimal point
-            
-            if not (all(char.isdigit() or char == "." for char in texto_nuevo) and texto_nuevo.count(".") <= 1):
-                return False # Bloquea letras, espacios o un segundo punto
-                
-            # maximum 3 numbers after the period
-            if "." in texto_nuevo:
-                parte_decimal = texto_nuevo.split(".")[1]
-                if len(parte_decimal) > 3:
-                    return False # Bloquea el cuarto decimal de inmediato
-        
-            return True
-
-        # registered the function in the Tkinter window
-        
-        v_cmd = ventana_isoconversion.register(validar_entrada)
-        
-        tk.Label(ventana_isoconversion, text="Δα = ", font=fuente).pack(pady=5)
-        valor_inicio = tk.DoubleVar(value=0.005)
+            ventana_isoconversion = tk.Toplevel(self)
+            ventana_isoconversion.title("Input data")
+            ventana_isoconversion.geometry("400x450")
+            ventana_isoconversion.resizable(False, False)
     
-        spinbox_rango = tk.Spinbox(ventana_isoconversion, from_=0, to=0.99, 
-                                  increment=0.001, state="normal",bg="white", 
-                                  textvariable=valor_inicio, font=fuente, fg="black",
-                                  validate="key", validatecommand=(v_cmd, '%P'))
-        spinbox_rango.pack(pady=5)
-                        
-                        
+            # --- d_a ---
+            def validar_entrada(texto_nuevo):
+                # Allows you to delete the field completely
+                
+                if texto_nuevo == "":
+                    return True
+                    
+                # only digits and at most one decimal point
+                
+                if not (all(char.isdigit() or char == "." for char in texto_nuevo) and texto_nuevo.count(".") <= 1):
+                    return False # Bloquea letras, espacios o un segundo punto
+                    
+                # maximum 3 numbers after the period
+                if "." in texto_nuevo:
+                    parte_decimal = texto_nuevo.split(".")[1]
+                    if len(parte_decimal) > 3:
+                        return False # Bloquea el cuarto decimal de inmediato
+            
+                return True
+    
+            # registered the function in the Tkinter window
+            
+            v_cmd = ventana_isoconversion.register(validar_entrada)
+            
+            tk.Label(ventana_isoconversion, text="Δα = ", font=fuente).pack(pady=5)
+            valor_inicio = tk.DoubleVar(value=0.005)
         
-
-        
-        #--- save data and exit---
-        def guardar_y_cerrar():
-            self.d_a1 = valor_inicio.get()
-            ventana_isoconversion.destroy()
-
-        #--- button ok ---
-        button_algo = tk.Button(ventana_isoconversion, text="OK", command=guardar_y_cerrar)
-        button_algo.pack(side=tk.BOTTOM, pady=20)
-        
-        
+            spinbox_rango = tk.Spinbox(ventana_isoconversion, from_=0, to=0.99, 
+                                      increment=0.001, state="normal",bg="white", 
+                                      textvariable=valor_inicio, font=fuente, fg="black",
+                                      validate="key", validatecommand=(v_cmd, '%P'))
+            spinbox_rango.pack(pady=5)
+                            
+                            
+            
+    
+            
+            #--- save data and exit---
+            def guardar_y_cerrar():
+                self.d_a1 = valor_inicio.get()
+                ventana_isoconversion.destroy()
+    
+            #--- button ok ---
+            button_algo = tk.Button(ventana_isoconversion, text="OK", command=guardar_y_cerrar)
+            button_algo.pack(side=tk.BOTTOM, pady=20)
+            
+          
+            
     
         
         
@@ -755,44 +878,54 @@ class Aplicacion(tk.Tk):
         of the time, temperature, and conversion rate files.
         """
         
-        # --- if it already exists, it does nothing.---
-        if hasattr(self, 'menu_obj') and self.menu_obj.winfo_exists():
-            return
-    
-        self.opcion_var = tk.StringVar(self.frame_header)
-        self.opcion_var.set("temperature")
+        if self.one_step == []:
+            messagebox.showinfo("open files", "open files, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input initial temperature, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input final temperature, please")
+        elif self.conversion_aux==0:
+            messagebox.showinfo("conversion", "execute conversion, please")
+        else:
+            
+            # --- if it already exists, it does nothing.---
+            if hasattr(self, 'menu_obj') and self.menu_obj.winfo_exists():
+                return
         
-        # we disable the "save" button every time the menu option changes.
-        # the trace command detects when the user selects something new.
-        self.opcion_var.trace_add("write", lambda *args: self.btn_save.config(state="disabled"))
-    
-        self.menu_obj = tk.OptionMenu(self.frame_header, self.opcion_var, "time", "temperature", "conversion rate")
-        self.menu_obj.pack(side="left", padx=10)
-    
-        def ejecutar_accion(tipo):
-            seleccion = self.opcion_var.get()
-            if tipo == "preview":
-                # if you press view, we activate the save button
-                self.btn_save.config(state="normal")
-                
-                if seleccion == "time": self.ver_timeAdvIsoDF()
-                elif seleccion == "temperature": self.ver_TempAdvIsoDF()
-                elif seleccion == "conversion rate": self.ver_diffAdvIsoDF()
-            else: # tipo == "save"
-                if seleccion == "time": self.export_timeAdvIsoDF()
-                elif seleccion == "temperature": self.export_TempAdvIsoDF()
-                elif seleccion == "conversion rate": self.export_diffAdvIsoDF()
-    
-        # view button (always active)
-        self.btn_see = tk.Button(self.frame_header, text="preview", 
-                                 command=lambda: ejecutar_accion("preview"), width=10)
-        self.btn_see.pack(side="left", padx=5)
-    
-        # save button (starts off)
-        self.btn_save = tk.Button(self.frame_header, text="save", 
-                                  command=lambda: ejecutar_accion("save"), 
-                                  width=10, state="disabled") # <--- Estado inicial
-        self.btn_save.pack(side="left", padx=5)
+            self.opcion_var = tk.StringVar(self.frame_header)
+            self.opcion_var.set("temperature")
+            
+            # we disable the "save" button every time the menu option changes.
+            # the trace command detects when the user selects something new.
+            self.opcion_var.trace_add("write", lambda *args: self.btn_save.config(state="disabled"))
+        
+            self.menu_obj = tk.OptionMenu(self.frame_header, self.opcion_var, "time", "temperature", "conversion rate")
+            self.menu_obj.pack(side="left", padx=10)
+        
+            def ejecutar_accion(tipo):
+                seleccion = self.opcion_var.get()
+                if tipo == "preview":
+                    # if you press view, we activate the save button
+                    self.btn_save.config(state="normal")
+                    
+                    if seleccion == "time": self.ver_timeAdvIsoDF()
+                    elif seleccion == "temperature": self.ver_TempAdvIsoDF()
+                    elif seleccion == "conversion rate": self.ver_diffAdvIsoDF()
+                else: # tipo == "save"
+                    if seleccion == "time": self.export_timeAdvIsoDF()
+                    elif seleccion == "temperature": self.export_TempAdvIsoDF()
+                    elif seleccion == "conversion rate": self.export_diffAdvIsoDF()
+        
+            # view button (always active)
+            self.btn_see = tk.Button(self.frame_header, text="preview", 
+                                     command=lambda: ejecutar_accion("preview"), width=10)
+            self.btn_see.pack(side="left", padx=5)
+        
+            # save button (starts off)
+            self.btn_save = tk.Button(self.frame_header, text="save", 
+                                      command=lambda: ejecutar_accion("save"), 
+                                      width=10, state="disabled") # <--- Estado inicial
+            self.btn_save.pack(side="left", padx=5)
 
 
     def ver_TempAdvIsoDF(self):
@@ -897,7 +1030,7 @@ class Aplicacion(tk.Tk):
                    self.isoTables[1].index.name = "alpha"
                    self.isoTables[1].index = np.trunc(self.isoTables[1].index * 1e6) / 1e6
                    self.isoTables[1].to_csv(filepath, index=True, encoding='utf-8-sig', sep=',')
-                   print(f"¡Listo! Guardado en: {filepath}")
+                   
            else:
                messagebox.showerror("error", "there is no data to save")
                  
@@ -1064,132 +1197,144 @@ class Aplicacion(tk.Tk):
         then they see resulting graphs that they can use as support to know which method to follow.
         """
         
-        top = tk.Toplevel(self.frame_contenedor)
-        top.title("Select options")
-        top.geometry("300x450")
-        top.configure(padx=20, pady=20)
-    
-        color_sistema = self.frame_contenedor.cget("bg") 
-        nombres = ["Friedman", "Kissinger-Akahira-Sunose", "Flynn-Wall-Ozawa", "Advance-Vyazovkin", "Vyazovkin"]
-        vars_opciones = [tk.IntVar(value=0) for _ in range(5)]
-        botones_lista = []
-        self.nombres_aux=[]
-    
-        def toggle_boton(idx):
-            if vars_opciones[idx].get() == 0:
-                vars_opciones[idx].set(1)
-                botones_lista[idx].config(bg="#4CAF50", fg="white")
-            else:
-                vars_opciones[idx].set(0)
-                botones_lista[idx].config(bg=color_sistema, fg="black")
-    
-        tk.Label(top, text="click to mark:", font=("Arial", 11, "bold")).pack(pady=10)
         
-        for i in range(5):
-            btn = tk.Button(top, 
-                            text=nombres[i].upper(), 
-                            font=("Arial", 10),
-                            width=30,
-                            pady=8,
-                            cursor="hand2")
-            btn.config(command=lambda i=i: toggle_boton(i))
-            btn.pack(pady=5)
-            botones_lista.append(btn)
-        
-        tk.Button(top, text="OK", command=top.destroy, 
-                  bg="#333333", fg="white", font=("Arial", 10, "bold"), pady=10).pack(fill="x", pady=20)
-    
-        self.frame_contenedor.wait_window(top)
-        n = [v.get() for v in vars_opciones]
-        
-        # if you press 4 or 4 and 5, the advance vyazovkin window appears. If you press 5 but not 4, the 5 vyazovkin window appears.
-        
-        if n[3] == 1: 
-            self.function_input_advanced_vyazovkin_method(self.frame_contenedor) 
-        elif n[4] == 1: 
-            self.function_input_vyazovkin_method(self.frame_contenedor)
-    
-        
-        try:
-           
-            self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1)
-            self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)   
-           
+        if self.one_step == []:
+            messagebox.showinfo("open files", "open files, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input initial temperature, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input final temperature, please")
+        elif self.conversion_aux==0:
+            messagebox.showinfo("conversion", "execute conversion, please")
+        elif self.d_a1==0:
+            messagebox.showinfo("delta", "input value delta, please")
+        else:
             
-            if n[0] == 1:
-                self.ace.Fr()
-                self.nombres_aux.append("Friedman")
+            top = tk.Toplevel(self.frame_contenedor)
+            top.title("Select options")
+            top.geometry("300x450")
+            top.configure(padx=20, pady=20)
+        
+            color_sistema = self.frame_contenedor.cget("bg") 
+            nombres = ["Friedman", "Kissinger-Akahira-Sunose", "Flynn-Wall-Ozawa", "Advance-Vyazovkin", "Vyazovkin"]
+            vars_opciones = [tk.IntVar(value=0) for _ in range(5)]
+            botones_lista = []
+            self.nombres_aux=[]
+        
+            def toggle_boton(idx):
+                if vars_opciones[idx].get() == 0:
+                    vars_opciones[idx].set(1)
+                    botones_lista[idx].config(bg="#4CAF50", fg="white")
+                else:
+                    vars_opciones[idx].set(0)
+                    botones_lista[idx].config(bg=color_sistema, fg="black")
+        
+            tk.Label(top, text="click to mark:", font=("Arial", 11, "bold")).pack(pady=10)
+            
+            for i in range(5):
+                btn = tk.Button(top, 
+                                text=nombres[i].upper(), 
+                                font=("Arial", 10),
+                                width=30,
+                                pady=8,
+                                cursor="hand2")
+                btn.config(command=lambda i=i: toggle_boton(i))
+                btn.pack(pady=5)
+                botones_lista.append(btn)
+            
+            tk.Button(top, text="OK", command=top.destroy, 
+                      bg="#333333", fg="white", font=("Arial", 10, "bold"), pady=10).pack(fill="x", pady=20)
+        
+            self.frame_contenedor.wait_window(top)
+            n = [v.get() for v in vars_opciones]
+            
+            # if you press 4 or 4 and 5, the advance vyazovkin window appears. If you press 5 but not 4, the 5 vyazovkin window appears.
+            
+            if n[3] == 1: 
+                self.function_input_advanced_vyazovkin_method(self.frame_contenedor) 
+            elif n[4] == 1: 
+                self.function_input_vyazovkin_method(self.frame_contenedor)
+        
+            
+            try:
+               
+                self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1)
+                self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)   
+               
                 
-            if n[1] == 1:
-                self.ace.KAS()
-                self.nombres_aux.append("Kissinger-Akahira-Sunose")
+                if n[0] == 1:
+                    self.ace.Fr()
+                    self.nombres_aux.append("Friedman")
+                    
+                if n[1] == 1:
+                    self.ace.KAS()
+                    self.nombres_aux.append("Kissinger-Akahira-Sunose")
+                         
+                if n[2] == 1:
+                    self.ace.OFW()
+                    self.nombres_aux.append("Flynn-Wall-Ozawa")
+                
+                if n[3] == 1:
+                    
+                    ventana_espera = tk.Toplevel(self.frame_contenedor)
+                    ventana_espera.title("Please wait")
+                    ventana_espera.geometry("250x100")
+                    ventana_espera.resizable(False, False)
+                    
+                    # keeps the window facing forward
+                    ventana_espera.attributes("-topmost", True)
+                    
+                    # calculated
+                    label_espera = tk.Label(ventana_espera, text="Calculated...", font=("Arial", 12, "bold"))
+                    label_espera.pack(pady=35)
+                    
+                    ventana_espera.update()
+                    
+                    try:
+                
+                        self.ace.aVy((self.x, self.y), var='time', p=self.p1)
+                        self.nombres_aux.append("Advance-Vyazovkin")
+                       
+                        
+                    finally:
+                        
+                        ventana_espera.destroy()
+                        
+                        
+               
+                    
+                if n[4] == 1:
+                    ventana_espera = tk.Toplevel(self.frame_contenedor)
+                    ventana_espera.title("Please wait")
+                    ventana_espera.geometry("250x100")
+                    ventana_espera.resizable(False, False)
+                    
+                    ventana_espera.attributes("-topmost", True)
+                    
+                    label_espera = tk.Label(ventana_espera, text="calculated...", font=("Arial", 12, "bold"))
+                    label_espera.pack(pady=35)
+                    
+                    ventana_espera.update()
+                    
+                    try:
+                        self.ace.Vy((self.x, self.y),method='senum-yang')
+                        self.nombres_aux.append("Vyazovkin")
                      
-            if n[2] == 1:
-                self.ace.OFW()
-                self.nombres_aux.append("Flynn-Wall-Ozawa")
-               
-            if n[3] == 1:
+                        
+                    finally:
+                        ventana_espera.destroy()
+                        
+                    
+                    
                 
-                ventana_espera = tk.Toplevel(self.frame_contenedor)
-                ventana_espera.title("Please wait")
-                ventana_espera.geometry("250x100")
-                ventana_espera.resizable(False, False)
+                self.fig = self.ace.Ea_plot()
+                self.draw_fig()
                 
-                # keeps the window facing forward
-                ventana_espera.attributes("-topmost", True)
                 
-                # calculated
-                label_espera = tk.Label(ventana_espera, text="Calculated...", font=("Arial", 12, "bold"))
-                label_espera.pack(pady=35)
-                
-                ventana_espera.update()
-                
-                try:
+    
+            except Exception as e:
+                messagebox.showerror("error" ,f"unexpected error {e}")
             
-                    self.ace.aVy((self.x, self.y), var='time', p=self.p1)
-                    self.nombres_aux.append("Advance-Vyazovkin")
-                   
-                    
-                finally:
-                    
-                    ventana_espera.destroy()
-                    
-             
-           
-                
-            if n[4] == 1:
-                ventana_espera = tk.Toplevel(self.frame_contenedor)
-                ventana_espera.title("Please wait")
-                ventana_espera.geometry("250x100")
-                ventana_espera.resizable(False, False)
-                
-                ventana_espera.attributes("-topmost", True)
-                
-                label_espera = tk.Label(ventana_espera, text="calculated...", font=("Arial", 12, "bold"))
-                label_espera.pack(pady=35)
-                
-                ventana_espera.update()
-                
-                try:
-                    self.ace.Vy((self.x, self.y),method='senum-yang')
-                    self.nombres_aux.append("Vyazovkin")
-                 
-                    
-                finally:
-                    ventana_espera.destroy()
-                    
-                
-               
-            
-            self.fig = self.ace.Ea_plot()
-            self.draw_fig()
-            #print(self.isoTables)
-
-            
-
-        except Exception as e:
-            messagebox.showerror("error" ,f"unexpected error {e}")
-        
           
         
     def iso_vy(self):
@@ -1263,423 +1408,511 @@ class Aplicacion(tk.Tk):
         """ 
         The user chooses the isoconversion method they deem appropriate, after analyzing the previous method.
         """
+        if self.one_step == []:
+            messagebox.showinfo("open files", "open files, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input initial temperature, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input final temperature, please")
+        elif self.conversion_aux==0:
+            messagebox.showinfo("conversion", "execute conversion, please")
+        elif self.d_a1==0:
+            messagebox.showinfo("delta", "input value delta, please")
+        else:
         
-        ventana_isoconversion = tk.Toplevel(self)
-        ventana_isoconversion.title("Enter data")
-        ventana_isoconversion.geometry("400x450")
-        ventana_isoconversion.resizable(False, False)
-
-        # --- method---
-        tk.Label(ventana_isoconversion, text="Method:").pack(pady=5)
-        
-        cinco_metodos =self.nombres_aux
-        
-        #cinco_metodos = ["aVy", "Vy", "Fr", "KAS", "OFW"]
-        combo_methods = ttk.Combobox(ventana_isoconversion, values=cinco_metodos, state="readonly")
-        combo_methods.set(self.nombres_aux[0]) # default value
-        combo_methods.pack(pady=5)
-        
-        self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1) # create variable with this default value
-        self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
-       
-        
-        def guardar_y_cerrar():
+            ventana_isoconversion = tk.Toplevel(self)
+            ventana_isoconversion.title("Enter data")
+            ventana_isoconversion.geometry("400x450")
+            ventana_isoconversion.resizable(False, False)
+    
+            # --- method---
+            tk.Label(ventana_isoconversion, text="Method:").pack(pady=5)
             
-            self.methods=combo_methods.get()
-
-            if self.methods=="Advance-Vyazovkin":
-                print("avy")
+            cinco_metodos =self.nombres_aux
+            
+            #cinco_metodos = ["aVy", "Vy", "Fr", "KAS", "OFW"]
+            combo_methods = ttk.Combobox(ventana_isoconversion, values=cinco_metodos, state="readonly")
+            combo_methods.set(self.nombres_aux[0]) # default value
+            combo_methods.pack(pady=5)
+            
+            self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1) # create variable with this default value
+            self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
+           
+            
+            def guardar_y_cerrar():
                 
-                # 1. Crear la ventana emergente de "Calculando"
-                ventana_espera = tk.Toplevel(self.frame_contenedor)
-                ventana_espera.title("Please wait")
-                ventana_espera.geometry("250x100")
-                ventana_espera.resizable(False, False)
+                self.methods=combo_methods.get()
+    
+                if self.methods=="Advance-Vyazovkin":
+                    
+                    # 1. Crear la ventana emergente de "Calculando"
+                    ventana_espera = tk.Toplevel(self.frame_contenedor)
+                    ventana_espera.title("Please wait")
+                    ventana_espera.geometry("250x100")
+                    ventana_espera.resizable(False, False)
+                    
+                    # Mantiene la ventana siempre al frente
+                    ventana_espera.attributes("-topmost", True)
+                    
+                    # Texto de aviso
+                    label_espera = tk.Label(ventana_espera, text="calculated...", font=("Arial", 12, "bold"))
+                    label_espera.pack(pady=35)
+                    
+                    # [CRUCIAL] Fuerza a Tkinter a dibujar la ventana emergente antes de congelarse
+                    ventana_espera.update()
+                    
+                    try:
+                        # 2. PROCESO PESADO (Simulado con sleep)
+                        self.method_used =self.ace.aVy((self.x, self.y), var='time', p=self.p1)  #opcion para escojer metodo  de los cinco
+                      
+                        
+                    finally:
+                        # 3. Destruir la ventana emergente automáticamente al terminar
+                        ventana_espera.destroy()
+                        
                 
-                # Mantiene la ventana siempre al frente
-                ventana_espera.attributes("-topmost", True)
                 
-                # Texto de aviso
-                label_espera = tk.Label(ventana_espera, text="calculated...", font=("Arial", 12, "bold"))
-                label_espera.pack(pady=35)
-                
-                # [CRUCIAL] Fuerza a Tkinter a dibujar la ventana emergente antes de congelarse
-                ventana_espera.update()
-                
-                try:
-                    # 2. PROCESO PESADO (Simulado con sleep)
-                    self.method_used =self.ace.aVy((self.x, self.y), var='time', p=self.p1)  #opcion para escojer metodo  de los cinco
+                elif self.methods=="Vyazovkin":
+                    
+                    
+                    ventana_espera = tk.Toplevel(self.frame_contenedor)
+                    ventana_espera.title("Please wait")
+                    ventana_espera.geometry("250x100")
+                    ventana_espera.resizable(False, False)
+                    
+                    ventana_espera.attributes("-topmost", True)
+                    
+                    label_espera = tk.Label(ventana_espera, text="calculated...", font=("Arial", 12, "bold"))
+                    label_espera.pack(pady=35)
+                    
+                    ventana_espera.update()
+                    
+                    try:
+                        self.method_used=  self.ace.Vy((self.x, self.y),method='senum-yang')
+                      
+                        
+                    finally:
+                        ventana_espera.destroy()
+                    
+                    
                   
-                    
-                finally:
-                    # 3. Destruir la ventana emergente automáticamente al terminar
-                    ventana_espera.destroy()
-                    
-            
-            
-            elif self.methods=="Vyazovkin":
-                print("Vy")
-                
-                
-                ventana_espera = tk.Toplevel(self.frame_contenedor)
-                ventana_espera.title("Please wait")
-                ventana_espera.geometry("250x100")
-                ventana_espera.resizable(False, False)
-                
-                ventana_espera.attributes("-topmost", True)
-                
-                label_espera = tk.Label(ventana_espera, text="calculated...", font=("Arial", 12, "bold"))
-                label_espera.pack(pady=35)
-                
-                ventana_espera.update()
-                
-                try:
-                    self.method_used=  self.ace.Vy((self.x, self.y),method='senum-yang')
+                elif self.methods=="Friedman":
+                    self.method_used=  self.ace.Fr() 
                   
-                    
-                finally:
-                    ventana_espera.destroy()
-                
-                
-              
-            elif self.methods=="Friedman":
-                print("FR")
-                self.method_used=  self.ace.Fr() 
-              
-            elif self.methods=="Kissinger-Akahira-Sunose":
-                print("KAS")
-                self.method_used= self.ace.KAS()
-               
-            elif self.methods=="Flynn-Wall-Ozawa":
-                print("OFW")
-                self.method_used= self.ace.OFW()
-              
-            else:
-                messagebox.showinfo("info","You must choose a method in the previous process")
-            ventana_isoconversion.destroy()
-
-        # --- button ok ---
-        button_algo = tk.Button(ventana_isoconversion, text="OK", command=guardar_y_cerrar)
-        button_algo.pack(side=tk.BOTTOM, pady=20)
+                elif self.methods=="Kissinger-Akahira-Sunose":
+                    self.method_used= self.ace.KAS()
+                   
+                elif self.methods=="Flynn-Wall-Ozawa":
+                    self.method_used= self.ace.OFW()
+                  
+                else:
+                    messagebox.showinfo("info","You must choose a method in the previous process")
+                ventana_isoconversion.destroy()
+    
+            # --- button ok ---
+            button_algo = tk.Button(ventana_isoconversion, text="OK", command=guardar_y_cerrar)
+            button_algo.pack(side=tk.BOTTOM, pady=20)
+            self.menu_start=1
+            
 
     def input_date_compensation(self):
         """ 
         This method inputs the data necessary for the Picnik compensation_effect method
         """
-
-        fuente = ("Helvetica", 12, "bold")
         
-        ventana_compensation = tk.Toplevel(self)
-        ventana_compensation.title("Enter data")
-        ventana_compensation.geometry("400x450")
-        ventana_compensation.resizable(False, False)
-
-        # --- d_a ---
-        opciones_beta = []
-        for i in range(self.numero_de_archivos):
-            texto = f"Beta {i} = {self.Beta[i]:.1f}"
-            opciones_beta.append(texto)
+        if self.one_step == []:
+            messagebox.showinfo("open files", "open files, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input initial temperature, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input final temperature, please")
+        elif self.conversion_aux==0:
+            messagebox.showinfo("conversion", "execute conversion, please")
+        elif self.d_a1==0:
+            messagebox.showinfo("delta", "input value delta, please")
+        elif self.menu_start==None:
+            messagebox.showinfo("isoconversion", "choose method isoconversion, please")
         
-        # use StringVar because the Spinbox now contains text (Beta 0 = ...)
-        valor_texto = tk.StringVar(value=opciones_beta[0])
-        
-        tk.Label(ventana_compensation, text="Select Beta:").pack(pady=5)
-        
-        spinbox_rango = tk.Spinbox(
-            ventana_compensation, 
-            values=opciones_beta, 
-            state="readonly", 
-            textvariable=valor_texto,
-            font=fuente,
-            fg="black",
-            width=20
-        )
-        spinbox_rango.pack(pady=5)
+        else:
 
-        # --- select model ---
-        tk.Label(ventana_compensation, text="select model = ").pack(pady=5)
-        options = ["r_Lin", "r_NL", "mse_NL"]
-        combo_options = ttk.Combobox(ventana_compensation, values=options, state="readonly")
-        combo_options.set("r_Lin") # default value
-        combo_options.pack(pady=5)
-
-        def actualizar_visibilidad(event=None):
-            pass
-        
-        combo_options.bind("<<ComboboxSelected>>", actualizar_visibilidad)
-        actualizar_visibilidad() # initial run
-
-
-        # --- save data ---
-        def guardar_y_cerrar():
+            fuente = ("Helvetica", 12, "bold")
             
-            self.compensation_inicio = opciones_beta.index(valor_texto.get())
-            self.compensation_error= combo_options.get()
+            ventana_compensation = tk.Toplevel(self)
+            ventana_compensation.title("Enter data")
+            ventana_compensation.geometry("400x450")
+            ventana_compensation.resizable(False, False)
+    
+            # --- d_a ---
+            opciones_beta = []
+            for i in range(self.numero_de_archivos):
+                texto = f"Beta {i} = {self.Beta[i]:.1f}"
+                opciones_beta.append(texto)
             
-            print(f"Variables actualizadas: B={self.compensation_inicio}, Linear={self.compensation_error}")
-            ventana_compensation.destroy()
-
-        # --- button ok ---
-        button_algo = tk.Button(ventana_compensation, text="OK", command=guardar_y_cerrar)
-        button_algo.pack(side=tk.BOTTOM, pady=20)
-        
+            # use StringVar because the Spinbox now contains text (Beta 0 = ...)
+            valor_texto = tk.StringVar(value=opciones_beta[0])
+            
+            tk.Label(ventana_compensation, text="Select Beta:").pack(pady=5)
+            
+            spinbox_rango = tk.Spinbox(
+                ventana_compensation, 
+                values=opciones_beta, 
+                state="readonly", 
+                textvariable=valor_texto,
+                font=fuente,
+                fg="black",
+                width=20
+            )
+            spinbox_rango.pack(pady=5)
+    
+            # --- select model ---
+            tk.Label(ventana_compensation, text="select model = ").pack(pady=5)
+            options = ["r_Lin", "r_NL", "mse_NL"]
+            combo_options = ttk.Combobox(ventana_compensation, values=options, state="readonly")
+            combo_options.set("r_Lin") # default value
+            combo_options.pack(pady=5)
+    
+            def actualizar_visibilidad(event=None):
+                pass
+            
+            combo_options.bind("<<ComboboxSelected>>", actualizar_visibilidad)
+            actualizar_visibilidad() # initial run
+    
+    
+            # --- save data ---
+            def guardar_y_cerrar():
+                
+                self.compensation_inicio = opciones_beta.index(valor_texto.get())
+                self.compensation_error= combo_options.get()
+                
+                ventana_compensation.destroy()
+    
+            # --- button ok ---
+            button_algo = tk.Button(ventana_compensation, text="OK", command=guardar_y_cerrar)
+            button_algo.pack(side=tk.BOTTOM, pady=20)
+            
         
     
     def ver_compensation_alpha(self):
         """
         visualize the compensation graph ln A vs alpha
         """
-        self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
         
-        try:
-    
-            self.compensation = self.ace.compensation_effect(
-                self.compensation_inicio,
-                self.method_used[2],
-                self.method_used[3],
-                error_m=self.compensation_error
-            )
-    
-            if self.compensation is None:
-                messagebox.showinfo("info","The compensation effect could not be calculated")
-                return
-    
-            self.fig = Figure(figsize=(7, 6), dpi=100)
-            ax = self.fig.add_subplot(111)
-    
-             
-            ax.errorbar(
-                self.method_used[0],
-                self.compensation[0],
-                self.compensation[1],
-                fmt='o',
-                color='blue'
-            )
-    
-            ax.set_xlabel(r'$\alpha$')
-            ax.set_ylabel(r'$\ln(A_{\alpha})$')
-            ax.set_title(r'$\ln(A)$ vs $\alpha$')
-            ax.grid(True)
-    
-            self.fig.tight_layout()
-            self.draw_fig()
-    
-        except Exception as e:
-            print("Error in ver_compensation_alpha:", e)
-            messagebox.showinfo("info","error in ver_compensation alpha")
+        if self.one_step == []:
+            messagebox.showinfo("open files", "open files, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input initial temperature, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input final temperature, please")
+        elif self.conversion_aux==0:
+            messagebox.showinfo("conversion", "execute conversion, please")
+        elif self.d_a1==0:
+            messagebox.showinfo("delta", "input value delta, please")
+        elif self.menu_start==None:
+            messagebox.showinfo("isoconversion", "choose method isoconversion, please")
+        elif self.compensation_inicio==None:
+            messagebox.showinfo("compensation", "input compensation data , please")
+            
         
+        else:
+        
+            self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
+            
+            try:
+        
+                self.compensation = self.ace.compensation_effect(
+                    self.compensation_inicio,
+                    self.method_used[2],
+                    self.method_used[3],
+                    error_m=self.compensation_error
+                )
+        
+                if self.compensation is None:
+                    messagebox.showinfo("info","The compensation effect could not be calculated")
+                    return
+        
+                self.fig = Figure(figsize=(7, 6), dpi=100)
+                ax = self.fig.add_subplot(111)
+        
+                 
+                ax.errorbar(
+                    self.method_used[0],
+                    self.compensation[0],
+                    self.compensation[1],
+                    fmt='o',
+                    color='blue'
+                )
+        
+                ax.set_xlabel(r'$\alpha$')
+                ax.set_ylabel(r'$\ln(A_{\alpha})$')
+                ax.set_title(r'$\ln(A)$ vs $\alpha$')
+                ax.grid(True)
+        
+                self.fig.tight_layout()
+                self.draw_fig()
+                self.compensation_alphaE=1 
+            except Exception as e:
+                messagebox.showinfo("info",f"error in ver_compensation alpha {e}")
+           
         #-----------------------------------------------------------------------------------#
     def ver_compensation_E(self):
         """
         visualize the compensation graph ln A vs E
         """
-        self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
+        if self.one_step == []:
+            messagebox.showinfo("open files", "open files, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input initial temperature, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input final temperature, please")
+        elif self.conversion_aux==0:
+            messagebox.showinfo("conversion", "execute conversion, please")
+        elif self.d_a1==0:
+            messagebox.showinfo("delta", "input value delta, please")
+        elif self.menu_start==None:
+            messagebox.showinfo("isoconversion", "choose method isoconversion, please")
+        elif self.compensation_inicio==None:
+            messagebox.showinfo("compensation", "input compensation data , please")
+        else:
         
-        try:
-    
-            self.compensation = self.ace.compensation_effect(
-                self.compensation_inicio,
-                self.method_used[2],
-                self.method_used[3],
-                error_m=self.compensation_error
-            )
-    
-            if self.compensation is None:
-                print("error calculate self.compensationensation effect")
-                messagebox.showinfo("info","error calculate self.compensationensation effect")
-                return
-    
-            ln_A, errorlnA, a, errora, b, errorb, Afit, Efit, r_sq, mod = self.compensation
-    
-            self.fig = Figure(figsize=(7, 6), dpi=100)
-            ax = self.fig.add_subplot(111)
-    
-            lnAfit = np.log(Afit)
-    
-            # points
-            ax.scatter(
-                Efit,
-                lnAfit,
-                color='red',
-                s=60
-            )
-    
-            # straight
-            xfit = np.linspace(min(Efit), max(Efit), 100)
-            yfit = a * xfit + b
-    
-            ax.plot(
-                xfit,
-                yfit,
-                color='black',
-                linewidth=2
-            )
-    
-            # labels of models
-            for i, m in enumerate(mod):
-                ax.text(
-                    Efit[i],
-                    lnAfit[i],
-                    m.__name__,
-                    fontsize=9
+            self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
+            
+            try:
+        
+                self.compensation = self.ace.compensation_effect(
+                    self.compensation_inicio,
+                    self.method_used[2],
+                    self.method_used[3],
+                    error_m=self.compensation_error
                 )
-    
-            ax.set_xlabel(r'$E$' )
-            ax.set_ylabel(r'$\ln(A)$')
-            ax.set_title(f"Compensation Effect ln A vs E              slope={a:.2f}  interception={b:.2f}")
-            ax.grid(True) 
-    
-            self.fig.tight_layout()
-            self.draw_fig()
-    
-        except Exception as e:
-            messagebox.showerror("error",f"compensation error {e}")
-
+        
+                if self.compensation is None:
+                    messagebox.showinfo("info","error calculate self.compensationensation effect")
+                    return
+        
+                ln_A, errorlnA, a, errora, b, errorb, Afit, Efit, r_sq, mod = self.compensation
+        
+                self.fig = Figure(figsize=(7, 6), dpi=100)
+                ax = self.fig.add_subplot(111)
+        
+                lnAfit = np.log(Afit)
+        
+                # points
+                ax.scatter(
+                    Efit,
+                    lnAfit,
+                    color='red',
+                    s=60
+                )
+       
+                # straight
+                xfit = np.linspace(min(Efit), max(Efit), 100)
+                yfit = a * xfit + b
+        
+                ax.plot(
+                    xfit,
+                    yfit,
+                    color='black',
+                    linewidth=2
+                )
+        
+                # labels of models
+                for i, m in enumerate(mod):
+                    ax.text(
+                        Efit[i],
+                        lnAfit[i],
+                        m.__name__,
+                        fontsize=9
+                    )
+        
+                ax.set_xlabel(r'$E$' )
+                ax.set_ylabel(r'$\ln(A)$')
+                ax.set_title(f"Compensation Effect ln A vs E              slope={a:.2f}  interception={b:.2f}")
+                ax.grid(True) 
+        
+                self.fig.tight_layout()
+                self.draw_fig()
+                self.compensation_alphaE=1 
+            except Exception as e:
+                messagebox.showerror("error",f"compensation error {e}")
             
     
     def export_compensation_report(self):
         """ 
         View the compensation method data
         """
-        self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
         
-        try:
-    
-            self.compensation = self.ace.compensation_effect(
-                self.compensation_inicio,
-                self.method_used[2],
-                self.method_used[3],
-                error_m=self.compensation_error
-            )
-    
-            if self.compensation is None:
-                print("the compensation effect could not be calculated")
-                return
+        if self.one_step == []:
+            messagebox.showinfo("open files", "open files, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input initial temperature, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input final temperature, please")
+        elif self.conversion_aux==0:
+            messagebox.showinfo("conversion", "execute conversion, please")
+        elif self.d_a1==0:
+            messagebox.showinfo("delta", "input value delta, please")
+        elif self.menu_start==None:
+            messagebox.showinfo("isoconversion", "choose method isoconversion, please")
+        elif self.compensation_inicio==None:
+            messagebox.showinfo("compensation", "input compensation data , please")
+        elif self.compensation_alphaE==None:
+            messagebox.showinfo("compensation", "input compensation alpha or E data , please")   
+        else:
+        
+            self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
             
-            rut = filedialog.asksaveasfilename(
-            defaultextension=".txt",
-            filetypes=[("files", "*.txt"), ("all files", "*.*")],
-            title="select rute",
-            initialfile="report_compensacion.txt"
-            )
-    
-            # if the user cancels, exit the function
-            if not rut:
-                print("cancel save")
-                return
-    
-            ln_A, errorlnA, a, errora, b, errorb, Afit, Efit, r_sq, mod = self.compensation
-            alpha = self.method_used[0]
-    
-            # write to the selected file
-            with open(rut, "w", encoding="utf-8") as f:
-                f.write("="*50 + "\n")
-                f.write("Compensation report\n")
-                f.write("="*50 + "\n\n")
-    
-                f.write("Compensation parameters:\n\n")
-                f.write(f"slope (a) : {a}\n")
-                f.write(f"Error a : {errora}\n")
-                f.write(f"Interception (b): {b}\n")
-                f.write(f"Error b : {errorb}\n")
-                f.write("\n" + "-"*50 + "\n\n")
-    
-                f.write("Accepted models:\n\n")
-                for i, model in enumerate(mod):
-                    f.write(f"[{i+1}] {model.__name__}\n")
-                    if i < len(Afit): f.write(f"  Afit = {Afit[i]}\n")
-                    if i < len(Efit): f.write(f"  Efit = {Efit[i]}\n")
-                    if i < len(r_sq): f.write(f"  R²   = {r_sq[i]}\n")
-                    f.write("\n")
-    
-                f.write(f"numbers of accepted models: {len(mod)}\n")
-                f.write("\n" + "-"*50 + "\n\n")
-    
-                f.write("summery ln(Aα):\n\n")
-                f.write(f"alpha shape : {np.shape(alpha)}\n")
-                f.write(f"ln_A shape  : {np.shape(ln_A)}\n")
-                f.write(f"error shape : {np.shape(errorlnA)}\n")
-                f.write("\n" + "="*50 + "\n")
-    
-            print(f"save report: {rut}")
+            try:
         
-        except Exception as e:
-            messagebox.showerror("error",f"compensation report error {e}")
-
+                self.compensation = self.ace.compensation_effect(
+                    self.compensation_inicio,
+                    self.method_used[2],
+                    self.method_used[3],
+                    error_m=self.compensation_error
+                )
         
+                if self.compensation is None:
+                    return
+                
+                rut = filedialog.asksaveasfilename(
+                defaultextension=".txt",
+                filetypes=[("files", "*.txt"), ("all files", "*.*")],
+                title="select rute",
+                initialfile="report_compensacion.txt"
+                )
+        
+                # if the user cancels, exit the function
+                if not rut:
+                    return
+        
+                ln_A, errorlnA, a, errora, b, errorb, Afit, Efit, r_sq, mod = self.compensation
+                alpha = self.method_used[0]
+        
+                # write to the selected file
+                with open(rut, "w", encoding="utf-8") as f:
+                    f.write("="*50 + "\n")
+                    f.write("Compensation report\n")
+                    f.write("="*50 + "\n\n")
+        
+                    f.write("Compensation parameters:\n\n")
+                    f.write(f"slope (a) : {a}\n")
+                    f.write(f"Error a : {errora}\n")
+                    f.write(f"Interception (b): {b}\n")
+                    f.write(f"Error b : {errorb}\n")
+                    f.write("\n" + "-"*50 + "\n\n")
+        
+                    f.write("Accepted models:\n\n")
+                    for i, model in enumerate(mod):
+                        f.write(f"[{i+1}] {model.__name__}\n")
+                        if i < len(Afit): f.write(f"  Afit = {Afit[i]}\n")
+                        if i < len(Efit): f.write(f"  Efit = {Efit[i]}\n")
+                        if i < len(r_sq): f.write(f"  R²   = {r_sq[i]}\n")
+                        f.write("\n")
+        
+                    f.write(f"numbers of accepted models: {len(mod)}\n")
+                    f.write("\n" + "-"*50 + "\n\n")
+        
+                    f.write("summery ln(Aα):\n\n")
+                    f.write(f"alpha shape : {np.shape(alpha)}\n")
+                    f.write(f"ln_A shape  : {np.shape(ln_A)}\n")
+                    f.write(f"error shape : {np.shape(errorlnA)}\n")
+                    f.write("\n" + "="*50 + "\n")
+        
+                
+            except Exception as e:
+                messagebox.showerror("error",f"compensation report error {e}")
+    
+            
     def ver_compensation_report(self):
         """
         save the compensation method data
         """
-        self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
-    
-        try:
-            # calculate the effect of the compensation
-            self.compensation = self.ace.compensation_effect(
-                self.compensation_inicio,
-                self.method_used[2],
-                self.method_used[3],
-                error_m=self.compensation_error
-            )
-    
-            if self.compensation is None:
-                print("the compensation effect could not be calculated")
-                return
+        if self.one_step == []:
+            messagebox.showinfo("open files", "open files, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input initial temperature, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input final temperature, please")
+        elif self.conversion_aux==0:
+            messagebox.showinfo("conversion", "execute conversion, please")
+        elif self.d_a1==0:
+            messagebox.showinfo("delta", "input value delta, please")
+        elif self.menu_start==None:
+            messagebox.showinfo("isoconversion", "choose method isoconversion, please")
+        elif self.compensation_inicio==None:
+            messagebox.showinfo("comoensation", "input compensation data , please")   
+        elif self.compensation_alphaE==None:
+            messagebox.showinfo("comoensation", "input compensation alpha or E data , please")   
             
-            ln_A, errorlnA, a, errora, b, errorb, Afit, Efit, r_sq, mod = self.compensation
-            alpha = self.method_used[0]
-    
-            rep_text = ""
-            rep_text += "Compensation report\n"
-            rep_text += "Compensation parameters:\n\n"
-            rep_text += f"slope (a) : {a}\n"
-            rep_text += f"Error a : {errora}\n"
-            rep_text += f"Interception (b): {b}\n"
-            rep_text += f"Error b : {errorb}\n"
-            rep_text += "\n"
-    
-            rep_text += "Accepted models:\n\n"
-            for i, model in enumerate(mod):
-                rep_text += f"[{i+1}] {model.__name__}\n"
-                if i < len(Afit): rep_text += f"  Afit = {Afit[i]}\n"
-                if i < len(Efit): rep_text += f"  Efit = {Efit[i]}\n"
-                if i < len(r_sq): rep_text += f"  R²   = {r_sq[i]}\n"
+        else:
+        
+            self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
+        
+            try:
+                # calculate the effect of the compensation
+                self.compensation = self.ace.compensation_effect(
+                    self.compensation_inicio,
+                    self.method_used[2],
+                    self.method_used[3],
+                    error_m=self.compensation_error
+                )
+        
+                if self.compensation is None:
+                    return
+                
+                ln_A, errorlnA, a, errora, b, errorb, Afit, Efit, r_sq, mod = self.compensation
+                alpha = self.method_used[0]
+        
+                rep_text = ""
+                rep_text += "Compensation report\n"
+                rep_text += "Compensation parameters:\n\n"
+                rep_text += f"slope (a) : {a}\n"
+                rep_text += f"Error a : {errora}\n"
+                rep_text += f"Interception (b): {b}\n"
+                rep_text += f"Error b : {errorb}\n"
                 rep_text += "\n"
+        
+                rep_text += "Accepted models:\n\n"
+                for i, model in enumerate(mod):
+                    rep_text += f"[{i+1}] {model.__name__}\n"
+                    if i < len(Afit): rep_text += f"  Afit = {Afit[i]}\n"
+                    if i < len(Efit): rep_text += f"  Efit = {Efit[i]}\n"
+                    if i < len(r_sq): rep_text += f"  R²   = {r_sq[i]}\n"
+                    rep_text += "\n"
+        
+                rep_text += f"numbers of accepted models: {len(mod)}\n"
+                rep_text += "\n" + "-"*50 + "\n\n"
+        
+                rep_text += "summery ln(Aα):\n\n"
+                rep_text += f"alpha shape : {np.shape(alpha)}\n"
+                rep_text += f"ln_A shape  : {np.shape(ln_A)}\n"
+                rep_text += f"error shape : {np.shape(errorlnA)}\n"
+                rep_text += "\n"
+        
+                # text view
+                self.fig = Figure(figsize=(7, 8), dpi=100)
+                ax = self.fig.add_subplot(111)
+                
+                # hide everything except the text
+                ax.axis('off')
+        
+                # text position
+                ax.text(
+                    0.02, 0.98, 
+                    rep_text, 
+                    fontsize=9, 
+                    family='monospace', # Obligatorio para que los caracteres ocupen el mismo ancho
+                    verticalalignment='top',
+                    horizontalalignment='left',
+                    transform=ax.transAxes # Usa coordenadas relativas del eje (0 a 1)
+                )
+        
+                self.fig.tight_layout()
+                
     
-            rep_text += f"numbers of accepted models: {len(mod)}\n"
-            rep_text += "\n" + "-"*50 + "\n\n"
-    
-            rep_text += "summery ln(Aα):\n\n"
-            rep_text += f"alpha shape : {np.shape(alpha)}\n"
-            rep_text += f"ln_A shape  : {np.shape(ln_A)}\n"
-            rep_text += f"error shape : {np.shape(errorlnA)}\n"
-            rep_text += "\n"
-    
-            # text view
-            self.fig = Figure(figsize=(7, 8), dpi=100)
-            ax = self.fig.add_subplot(111)
-            
-            # hide everything except the text
-            ax.axis('off')
-    
-            # text position
-            ax.text(
-                0.02, 0.98, 
-                rep_text, 
-                fontsize=9, 
-                family='monospace', # Obligatorio para que los caracteres ocupen el mismo ancho
-                verticalalignment='top',
-                horizontalalignment='left',
-                transform=ax.transAxes # Usa coordenadas relativas del eje (0 a 1)
-            )
-    
-            self.fig.tight_layout()
-            
-
-            self.draw_fig()
-            
-        except Exception as e:
-            messagebox.showerror("error",f"compensation report error {e}")
+                self.draw_fig()
+                
+            except Exception as e:
+                messagebox.showerror("error",f"compensation report error {e}")
 
 
 
@@ -1688,22 +1921,40 @@ class Aplicacion(tk.Tk):
         This method is called picnik reconstruction method
         """
         
-        try:
-        # clean frame
-            for widget in self.frame_grafico.winfo_children():
-                widget.destroy()
+        if self.one_step == []:
+            messagebox.showinfo("open files", "open files, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input initial temperature, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input final temperature, please")
+        elif self.conversion_aux==0:
+            messagebox.showinfo("conversion", "execute conversion, please")
+        elif self.d_a1==0:
+            messagebox.showinfo("delta", "input value delta, please")
+        elif self.menu_start==None:
+            messagebox.showinfo("isoconversion", "choose method isoconversion, please")
+        elif self.compensation_inicio==None:
+            messagebox.showinfo("comoensation", "input compensation data , please")   
+        elif self.compensation_alphaE==None:
+            messagebox.showinfo("comoensation", "input compensation alpha or E data , please")   
+        else:
+        
+            try:
+            # clean frame
+                for widget in self.frame_grafico.winfo_children():
+                    widget.destroy()
+        
+                self.fig, self.g_a = self.ace.reconstruction(
+                    self.method_used[2],
+                    np.exp(self.compensation[0]),
+                    self.Beta[self.compensation_inicio]
+                    
+                )
+        
+                self.draw_fig()
     
-            self.fig, self.g_a = self.ace.reconstruction(
-                self.method_used[2],
-                np.exp(self.compensation[0]),
-                self.Beta[self.compensation_inicio]
-                
-            )
-    
-            self.draw_fig()
-
-        except Exception as e:
-            messagebox.showerror("error",f"reconstruction error {e}")
+            except Exception as e:
+                messagebox.showerror("error",f"reconstruction error {e}")
 
            
 
@@ -1712,14 +1963,28 @@ class Aplicacion(tk.Tk):
         """
         Activation energy data is exported
         """
+        if self.one_step == []:
+            messagebox.showinfo("open files", "open files, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input initial temperature, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input final temperature, please")
+        elif self.conversion_aux==0:
+            messagebox.showinfo("conversion", "execute conversion, please")
+        elif self.d_a1==0:
+            messagebox.showinfo("delta", "input value delta, please")
+        elif self.menu_start==None:
+            messagebox.showinfo("isoconversion", "choose method isoconversion, please")
         
-        try:
-            if self.ace.export_Ea(): 
-                messagebox.showinfo("correct", "data exported successfully")
-            else: 
-                print("save cancel.")
-        except Exception as e:
-            messagebox.showerror("error",f"export files error {e}")
+        else:
+               
+            try:
+                if self.ace.export_Ea(): 
+                    messagebox.showinfo("correct", "data exported successfully")
+                else: 
+                    print("save cancel.")
+            except Exception as e:
+                messagebox.showerror("error",f"export files error {e}")
 
 
            
@@ -1730,15 +1995,33 @@ class Aplicacion(tk.Tk):
         natural logarithm of the pre-exponential factor, and reaction model.
         """
     
-        try:
-            
-            "Kinetic triplet"
-            if self.ace.export_kinetic_triplet(self.method_used[0][1::], self.method_used[2][1::], self.compensation[0][1::], self.g_a, name="kinetic_triplet.csv" ):
-                messagebox.showinfo("correct","data exported successfull")
-            else:
-                print("save cancel")
-        except Exception as e:
-            messagebox.showerror("error",f"export files error {e}")
+        if self.one_step == []:
+            messagebox.showinfo("open files", "open files, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input initial temperature, please")
+        elif self.fix1_conversion==[]:
+            messagebox.showinfo("temperature", "input final temperature, please")
+        elif self.conversion_aux==0:
+            messagebox.showinfo("conversion", "execute conversion, please")
+        elif self.d_a1==0:
+            messagebox.showinfo("delta", "input value delta, please")
+        elif self.menu_start==None:
+            messagebox.showinfo("isoconversion", "choose method isoconversion, please")
+        elif self.compensation_inicio==None:
+            messagebox.showinfo("comoensation", "input compensation data , please")
+        elif self.compensation_alphaE==None:
+            messagebox.showinfo("comoensation", "input compensation alpha or E data , please")   
+        else:
+    
+            try:
+                
+                "Kinetic triplet"
+                if self.ace.export_kinetic_triplet(self.method_used[0][1::], self.method_used[2][1::], self.compensation[0][1::], self.g_a, name="kinetic_triplet.csv" ):
+                    messagebox.showinfo("correct","data exported successfull")
+                else:
+                    print("save cancel")
+            except Exception as e:
+                messagebox.showerror("error",f"export files error {e}")
 
 
    
