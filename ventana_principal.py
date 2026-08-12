@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from tkinter import ttk
+#from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 import picnik as pnk
@@ -12,9 +12,11 @@ import subprocess
 import shutil
 import pandas as pd
 import re
+import ttkbootstrap as ttk
+#from ttkbootstrap.constants import *
+from ttkbootstrap.dialogs import Messagebox
 
-
-class Aplicacion(tk.Tk):
+class Aplicacion(ttk.Window):
     """
     Graphical interface for managing and visualizing isoconversion calculations.
     This class manages a Tkinter window that allows interaction with the
@@ -32,16 +34,18 @@ class Aplicacion(tk.Tk):
         """
         Starts the main window
         """
-        
-        super().__init__()
+        self.tema="darkly"
+        super().__init__(themename=self.tema)
         self.title("Picnik desktop edition")
         self.geometry("1280x720")
+        self.minsize(820,600)
 
         """
         interface variables
         """
        
         self.fase_actual = tk.IntVar(value=1)
+        
         
         """
         picnik support variables
@@ -90,7 +94,9 @@ class Aplicacion(tk.Tk):
         self.menu_start2=None
         self.compensation_alphaE=None
         self._configurar_menu()
-
+        self.etiqueta=None
+        self.control=None
+        
        
         """
         This section defines our main container and the two containers within it.
@@ -100,16 +106,30 @@ class Aplicacion(tk.Tk):
         
         """
         
-        self.frame_contenedor = tk.Frame(self) 
+        # ttk for bootstarp
+        
+        self.frame_contenedor = ttk.Frame(self) 
         self.frame_contenedor.pack(fill="both", expand=True)
-
-        self.frame_header = tk.LabelFrame(self.frame_contenedor, pady=10)
+        
+        self.frame_header = ttk.LabelFrame(self.frame_contenedor, text="Toolbar", padding=10, bootstyle="primary")
         self.frame_header.pack(side="top", fill="x", padx=10, pady=5)
-
-        self.frame_grafico = tk.LabelFrame(self.frame_contenedor)
+        
+        self.frame_grafico = ttk.LabelFrame(self.frame_contenedor, text="Overview", padding=10, bootstyle="info")
         self.frame_grafico.pack(side="bottom", fill="both", expand=True, padx=10, pady=5)
-        etiqueta = tk.Label(self.frame_grafico, text="Picnik desktop edition",font=("Arial", 34, "bold"))
-        etiqueta.pack(expand=True)
+        
+        estilo = ttk.Style()
+        
+        estilo.configure("Gigante.TLabel", font=("", 34, "bold"))
+        
+        self.etiqueta = ttk.Label(
+            self.frame_grafico, 
+            text="Picnik desktop edition", 
+            style="Gigante.TLabel",  # link style
+            bootstyle="light"
+        )
+        self.etiqueta.pack(expand=True)
+        
+
         
         self.config_fases = {
             1: [("Open Files", self.open_files)],
@@ -135,32 +155,95 @@ class Aplicacion(tk.Tk):
          if messagebox.askyesno("Quit", "Do you want to exit the application?"):
              self.destroy()
              sys.exit()    
+    
+   
+    
+    def tema_claro(self):
+        self.style.theme_use("flatly")
+        self.tema="flatly"
+        
+        if (self.fase_actual.get() == 1) and (  self.one_step==[]) :
+            if hasattr(self, 'etiqueta') and self.etiqueta.winfo_exists():
+                self.etiqueta.destroy()
+            self.etiqueta = ttk.Label(
+                self.frame_grafico, 
+                text="Picnik desktop edition", 
+                font=("", 28, "bold"),
+                bootstyle="dark"    
+            )
+            self.etiqueta.pack(expand=True) 
+        else:
+            if hasattr(self, 'etiqueta') and self.etiqueta.winfo_exists():
+                self.etiqueta.config(bootstyle="dark")   
        
+    def tema_oscuro(self):
+        self.style.theme_use("darkly")
+        self.tema="darkly"
+        if (self.fase_actual.get() == 1) and (  self.one_step==[]) :
+            if hasattr(self, 'etiqueta') and self.etiqueta.winfo_exists():
+                self.etiqueta.destroy()
+            self.etiqueta = ttk.Label(
+                self.frame_grafico, 
+                text="Picnik desktop edition", 
+                font=("", 28, "bold"),
+                bootstyle="light"    
+            )
+            self.etiqueta.pack(expand=True) 
+        else:
+            if hasattr(self, 'etiqueta') and self.etiqueta.winfo_exists():
+                self.etiqueta.config(bootstyle="light")
+
+    def tema_oscuro2(self):
+        self.style.theme_use("cyborg")
+        self.tema="cyborg"
+        if (self.fase_actual.get() == 1) and (  self.one_step==[]) :
+            if hasattr(self, 'etiqueta') and self.etiqueta.winfo_exists():
+                self.etiqueta.destroy()
+            self.etiqueta = ttk.Label(
+                self.frame_grafico, 
+                text="Picnik desktop edition", 
+                font=("", 28, "bold"),
+                bootstyle="light"    
+            )
+            self.etiqueta.pack(expand=True) 
+        else:
+            if hasattr(self, 'etiqueta') and self.etiqueta.winfo_exists():
+                self.etiqueta.config(bootstyle="light")
+
 
     def _configurar_menu(self):
         
         """
         This method creates the navigation menu
         """
-
-        
-        menubar = tk.Menu(self)
+        menubar = ttk.Menu(self)
         self.config(menu=menubar)
         
-        # --- menu files---
-        menu_files = tk.Menu(menubar, tearoff=0)
+        # --- menu files ---
+        # CORRECCIÓN: Usar tk.Menu, no ttk.Menu
+        menu_files = tk.Menu(menubar, tearoff=0) 
         menubar.add_cascade(label="Files", menu=menu_files)
         menu_files.add_command(label="Open Files", command=self.open_files)
         menu_files.add_separator()
         menu_files.add_command(label="Exit", command=self.function_exit)
 
+        
+        menu_theme = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Theme", menu=menu_theme)
+        menu_theme.add_command(label="Light", command=self.tema_claro)
+        menu_theme.add_command(label="Dark", command=self.tema_oscuro)
+        menu_theme.add_command(label="Cyborg", command=self.tema_oscuro2)
+        
+                
+      
+
         # --- menu images ---
-        menu_images = tk.Menu(menubar, tearoff=0)
+        menu_images = ttk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Images", menu=menu_images)
         menu_images.add_command(label="Save Image", command=self.save_image_picnik)
 
-        # ---menu help ---
-        menu_help = tk.Menu(menubar, tearoff=0)
+        # --- menu help ---
+        menu_help = ttk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Help", menu=menu_help)
         menu_help.add_command(label="About", command=self.about_picnik)
         menu_help.add_command(label="Tutorial", command=self.function_tutorial)
@@ -175,24 +258,70 @@ class Aplicacion(tk.Tk):
 
         fase = self.fase_actual.get()
         
+       
+        total_buttoms = 0
+        if fase > 1:
+            total_buttoms += 1  # buttom "Previous"
+            
+        if fase in self.config_fases:
+            total_buttoms += len(self.config_fases[fase])  # actions buttom
+            
+        total_buttoms += 1  # buttom "Next" o "restart"
+        
+        # font size, padding size, margin size
+        padding_y = 6   
+        if total_buttoms <= 3:
+            tamano_letra = 11
+            padding_x = 12
+            margen_x = 5
+        elif 4 <= total_buttoms <= 5:
+            tamano_letra = 9
+            padding_x = 8
+            margen_x = 4
+        else:
+            tamano_letra = 8
+            padding_x = 1
+            margen_x = 1
+
+        # configure ttkbootstrap and font size
+        estilo = ttk.Style()
+        estilo.configure("primary.TButton", font=("", tamano_letra))
+        estilo.configure("secondary.TButton", font=("", tamano_letra,))
+        estilo.configure("success.TButton", font=("", tamano_letra))
+        estilo.configure("danger.TButton", font=("", tamano_letra))
+
+   
         # button previous (second phase)
         if fase > 1:
             ttk.Button(self.frame_header, text="<< Previous", 
-                       command=self.go_previous).pack(side="left", padx=5)
+                       command=self.go_previous,
+                       padding=(padding_x, padding_y),
+                       bootstyle="secondary",
+                       cursor="hand2").pack(side="left", padx=margen_x)
 
         # --- actions buttons-
         if fase in self.config_fases:
             for texto, comando in self.config_fases[fase]:
-                ttk.Button(self.frame_header, text=texto, command=comando).pack(side="left", padx=5)
+                ttk.Button(self.frame_header, text=texto, 
+                           command=comando,
+                           padding=(padding_x, padding_y),
+                           bootstyle="primary",
+                           cursor="hand2").pack(side="left", padx=margen_x)
 
         # --- button next ---
         if fase < len(self.config_fases):
             ttk.Button(self.frame_header, text="Next >>", 
-                       command=self.go_next).pack(side="right", padx=5)
+                       command=self.go_next,
+                       padding=(padding_x, padding_y),
+                       bootstyle="success",
+                       cursor="hand2").pack(side="right", padx=margen_x)
         else:
             # reset button
-            ttk.Button(self.frame_header, text="Reiniciar Todo", 
-                       command=self.reiniciar).pack(side="right", padx=5)
+            ttk.Button(self.frame_header, text="Restart", 
+                       command=self.reiniciar,
+                       padding=(padding_x, padding_y),
+                       bootstyle="danger",
+                       cursor="hand2").pack(side="right", padx=margen_x)
 
     def go_next(self):
         """
@@ -200,6 +329,7 @@ class Aplicacion(tk.Tk):
         """
         self.fase_actual.set(self.fase_actual.get() + 1)
         self.actualizar_botones()
+        self.control=1
     
     def go_previous(self):
         """
@@ -212,17 +342,32 @@ class Aplicacion(tk.Tk):
         """
         This method resets all my variables to restart the application.
         """
+        
         for widget in self.frame_grafico.winfo_children():
             widget.destroy()
-
+        
         self.fase_actual.set(1)
         self.actualizar_botones()
-        self.fig=None
-        etiqueta = tk.Label(self.frame_grafico, text="Picnik desktop edition",font=("Arial", 34, "bold"))
+        self.fig = None
+        """
+        # SOLUCIÓN: Cambiado a ttk.Label con bootstyle="light" para mantener el modo oscuro
+        etiqueta = ttk.Label(
+            self.frame_grafico, 
+            text="Picnik desktop edition", 
+            font=("Helvetica", 34, "bold"), # Usamos Helvetica para evitar fallos entre Windows y Linux
+            bootstyle="light" # Fuerza a que las letras se mantengan blancas/claras premium
+        )
+        
         etiqueta.pack(expand=True)
         
+        """
+        if hasattr(self, 'etiqueta') and self.etiqueta is not None:
+            self.etiqueta.destroy()
+            
+   
+  
+     
         
-        #############################################################################
         """
         reset variables
         """  
@@ -269,14 +414,34 @@ class Aplicacion(tk.Tk):
         self.menu_start=None
         self.menu_start2=None
         self.compensation_alphaE=None
+        self._configurar_menu()
+        self.etiqueta=None
+        self.control=None
         
-        #################################################################################
-
-    
-            
-                 
-            
-
+        if self.tema == "darkly":
+            self.etiqueta = ttk.Label(
+                self.frame_grafico, 
+                text="Picnik desktop edition", 
+                font=("", 28, "bold"),
+                bootstyle="light"    
+            )
+            self.etiqueta.pack(expand=True) 
+        elif self.tema == "flatly":
+            self.etiqueta = ttk.Label(
+                self.frame_grafico, 
+                text="Picnik desktop edition", 
+                font=("", 28, "bold"),
+                bootstyle="dark"    
+            )
+            self.etiqueta.pack(expand=True) 
+        else:
+            self.etiqueta = ttk.Label(
+                self.frame_grafico, 
+                text="Picnik desktop edition", 
+                font=("", 28, "bold"),
+                bootstyle="dark"    
+            )
+            self.etiqueta.pack(expand=True)   
                 
     
     def detect_encoding(self,file, num_bytes=10000):
@@ -303,14 +468,14 @@ class Aplicacion(tk.Tk):
                 filetypes=[("valid files", "*.csv *.txt")]
             )
         
-            # Validación de dos o más archivos
+            # files validation
             if len(files) > 1:
                 self.one_step_aux.clear()
                 self.one_step_aux.extend(files)
                 for file in self.one_step_aux:
                     print("-------------------")
                 
-                # Guarda el número de archivos
+                # save number files
                 self.numero_de_archivos = len(files)    
             else:
                 messagebox.showinfo(
@@ -327,7 +492,7 @@ class Aplicacion(tk.Tk):
         
                     codificacion, confianza = self.detect_encoding(file) 
                       
-                    # 3. Leemos las columnas con la codificación detectada
+                    # 3. read colums for detect encoding
                     df = pd.read_csv(file, nrows=0, skipinitialspace=True, encoding=codificacion, sep=r'[\t,;]+', engine='python')
                     columnas = df.shape[1]
                         
@@ -364,21 +529,28 @@ class Aplicacion(tk.Tk):
         # canvas configure
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame_grafico)
         self.canvas.draw()
-
+  
         # navigation toolbar
         toolbar = NavigationToolbar2Tk(self.canvas, self.frame_grafico, pack_toolbar=False)
         toolbar.update()
+        color_fondo = "#212529"       # backgroud dark
+        color_texto = "#ffffff"       # font white
+        
+        toolbar.config(background=color_fondo)
+        for elemento in toolbar.winfo_children():
+            try:
+                elemento.config(background=color_fondo, foreground=color_texto)
+            except Exception:
+                # Si el elemento no acepta texto (como los separadores), solo cambia su fondo
+                elemento.config(background=color_fondo)
 
-        # # Order matters so they don't overlap
-        toolbar.pack(side=tk.BOTTOM, fill=tk.X)
-        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
-        # Manual packaging to ensure order
         # Toolbar at the bottom and chart at the top
-        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         toolbar.pack(side=tk.BOTTOM, fill=tk.X)
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        
                         
-    #the six initial main figures are drawn
+    #the six initial main figures are draw
     def view_graphs(self):
             """
             It is verified that the files have the same encoding; if so,
@@ -764,16 +936,13 @@ class Aplicacion(tk.Tk):
                 
             boton_frame = ttk.Frame(ventana)
             boton_frame.pack(fill="x")
-            ttk.Button(boton_frame, text="Save values", command=obtener).pack(pady=10)
+            ttk.Button(boton_frame, text="Save values",style="primary", command=obtener).pack(pady=10)
             
         else:
             messagebox.showinfo("open files", "open files, please")
 
          
          
-
-             
-
    
     def conversion(self):
         """
@@ -799,7 +968,7 @@ class Aplicacion(tk.Tk):
 
     #-----------------------------------------------------------------------------------#
 
-    def input_data_isoconversion(self):          #----revisar----------------------------
+    def input_data_isoconversion(self):          #----revisar--------
         """
         The user saves the Δα value that they deem appropriate.
         """
@@ -813,23 +982,22 @@ class Aplicacion(tk.Tk):
             messagebox.showinfo("conversion", "execute conversion, please")
               
         else:
-        
-            fuente = ("Helvetica", 12, "bold")
+            fuente = ("", 12, "bold")
             
-            ventana_isoconversion = tk.Toplevel(self)
+            # ttk extends 'darkly'
+            ventana_isoconversion = ttk.Toplevel(self)
             ventana_isoconversion.title("Input data")
-            ventana_isoconversion.geometry("400x450")
+            ventana_isoconversion.geometry("400x320")
             ventana_isoconversion.resizable(False, False)
+            ventana_isoconversion.configure(padx=20, pady=20)
     
             # --- d_a ---
             def validar_entrada(texto_nuevo):
-                # Allows you to delete the field completely
-                
+                # allows you to delete the field completely
                 if texto_nuevo == "":
                     return True
                     
                 # only digits and at most one decimal point
-                
                 if not (all(char.isdigit() or char == "." for char in texto_nuevo) and texto_nuevo.count(".") <= 1):
                     return False # Bloquea letras, espacios o un segundo punto
                     
@@ -837,39 +1005,46 @@ class Aplicacion(tk.Tk):
                 if "." in texto_nuevo:
                     parte_decimal = texto_nuevo.split(".")[1]
                     if len(parte_decimal) > 3:
-                        return False # Bloquea el cuarto decimal de inmediato
+                        return False # bloquea el cuarto decimal de inmediato
             
                 return True
     
             # registered the function in the Tkinter window
-            
             v_cmd = ventana_isoconversion.register(validar_entrada)
             
-            tk.Label(ventana_isoconversion, text="Δα = ", font=fuente).pack(pady=5)
+            # extend darkly
+            #ttk.Label(ventana_isoconversion, text="Δα = ", font=fuente, bootstyle="darkly").pack(pady=10)
+            ttk.Label(ventana_isoconversion, text="Δα = ", font=fuente).pack(pady=10)
+            
             valor_inicio = tk.DoubleVar(value=0.005)
         
-            spinbox_rango = tk.Spinbox(ventana_isoconversion, from_=0, to=0.99, 
-                                      increment=0.001, state="normal",bg="white", 
-                                      textvariable=valor_inicio, font=fuente, fg="black",
-                                      validate="key", validatecommand=(v_cmd, '%P'))
-            spinbox_rango.pack(pady=5)
+            spinbox_rango = ttk.Spinbox(
+                ventana_isoconversion, 
+                from_=0, 
+                to=0.99, 
+                increment=0.001, 
+                state="normal",
+                textvariable=valor_inicio, 
+                font=fuente,
+                validate="key", 
+                validatecommand=(v_cmd, '%P')
+            )
+            spinbox_rango.pack(pady=10, fill="x")
                             
-                            
-            
-    
-            
-            #--- save data and exit---
+            # --- save data and exit ---
             def guardar_y_cerrar():
                 self.d_a1 = valor_inicio.get()
                 ventana_isoconversion.destroy()
     
-            #--- button ok ---
-            button_algo = tk.Button(ventana_isoconversion, text="OK", command=guardar_y_cerrar)
-            button_algo.pack(side=tk.BOTTOM, pady=20)
-            
-          
-            
-    
+            # --- button ok ---
+            button_algo = ttk.Button(
+                ventana_isoconversion, 
+                text="OK", 
+                command=guardar_y_cerrar,
+                bootstyle="primary",
+                cursor="hand2"
+            )
+            button_algo.pack(side=tk.BOTTOM, fill="x", pady=(20, 0))
         
         
     def mostrar_opciones(self):
@@ -892,6 +1067,7 @@ class Aplicacion(tk.Tk):
             if hasattr(self, 'menu_obj') and self.menu_obj.winfo_exists():
                 return
         
+            """
             self.opcion_var = tk.StringVar(self.frame_header)
             self.opcion_var.set("temperature")
             
@@ -901,6 +1077,28 @@ class Aplicacion(tk.Tk):
         
             self.menu_obj = tk.OptionMenu(self.frame_header, self.opcion_var, "time", "temperature", "conversion rate")
             self.menu_obj.pack(side="left", padx=10)
+            """
+            
+            #-------------------------
+                        
+                      
+            
+            # tk extend tkinter
+            self.opcion_var = tk.StringVar(self.frame_header)
+            self.opcion_var.set("temperature")
+            self.opcion_var.trace_add("write", lambda *args: self.btn_save.config(state="disabled"))
+            
+            opciones = ["time", "temperature", "conversion rate"]
+            
+            self.menu_obj = ttk.OptionMenu(
+                self.frame_header, 
+                self.opcion_var, 
+                self.opcion_var.get(),
+                *opciones,
+                #bootstyle="darkly"
+            )
+            self.menu_obj.pack(side="left", padx=10)
+
         
             def ejecutar_accion(tipo):
                 seleccion = self.opcion_var.get()
@@ -917,14 +1115,14 @@ class Aplicacion(tk.Tk):
                     elif seleccion == "conversion rate": self.export_diffAdvIsoDF()
         
             # view button (always active)
-            self.btn_see = tk.Button(self.frame_header, text="preview", 
+            self.btn_see = ttk.Button(self.frame_header, text="preview", 
                                      command=lambda: ejecutar_accion("preview"), width=10)
             self.btn_see.pack(side="left", padx=5)
         
             # save button (starts off)
-            self.btn_save = tk.Button(self.frame_header, text="save", 
+            self.btn_save = ttk.Button(self.frame_header, text="save", 
                                       command=lambda: ejecutar_accion("save"), 
-                                      width=10, state="disabled") # <--- Estado inicial
+                                      width=10, state="disabled")
             self.btn_save.pack(side="left", padx=5)
 
 
@@ -993,7 +1191,7 @@ class Aplicacion(tk.Tk):
         self.isoTables=None
         
         try:
-            # --frame clean
+            # frame clean
             for widget in self.frame_grafico.winfo_children():
                 widget.destroy()
 
@@ -1100,96 +1298,150 @@ class Aplicacion(tk.Tk):
     #--------------------------------------------------------------------------        
              
     def function_input_advanced_vyazovkin_method(self,ventana_padre):
-        """
-        In this function, the user defines the minimum activation energy, 
-        maximum activation energy, and percentile for the advanced Vyazovkin method.
-        """
+         """
+         In this function, the user defines the minimum activation energy, 
+         maximum activation energy, and percentile for the advanced Vyazovkin method.
+         """
         
-        ventana_isoconversion = tk.Toplevel(ventana_padre)
-        ventana_isoconversion.title("enter data")
-        ventana_isoconversion.geometry("400x450")
-        ventana_isoconversion.resizable(False, False)
+         # ttk extends darkly
+         ventana_isoconversion = ttk.Toplevel(ventana_padre)
+         ventana_isoconversion.title("Enter data")
+         ventana_isoconversion.geometry("400x380")
+         ventana_isoconversion.resizable(False, False)
+         ventana_isoconversion.configure(padx=20, pady=20)
+         
+         fuente = ("", 12, "bold")
+    
+         #ttk.Label(ventana_isoconversion, text="Activate Energy Min = ", font=fuente, bootstyle="darkly").pack(pady=(5, 2))
+         ttk.Label(ventana_isoconversion, text="Activate Energy Min = ", font=fuente).pack(pady=(5, 2))
+         
+         valor_inicio_x = tk.DoubleVar(value=5)
+         
+         spinbox_min = ttk.Spinbox(
+             ventana_isoconversion, 
+             from_=0, 
+             to=250, 
+             increment=0.5, 
+             state="readonly", 
+             textvariable=valor_inicio_x,
+             font=fuente,
+             width=20
+         )
+         spinbox_min.pack(pady=5, fill="x")
         
-        fuente = ("Helvetica", 12, "bold")
-
-        tk.Label(ventana_isoconversion, text="activate energy min = ").pack(pady=5)
-        valor_inicio_x = tk.DoubleVar(value=5)
-        spinbox_rango = tk.Spinbox(ventana_isoconversion, from_=0, to=250, 
-                                increment=0.5, state="readonly", 
-                                textvariable=valor_inicio_x,font=fuente,fg="black")
-        spinbox_rango.pack(pady=5)
-
-        tk.Label(ventana_isoconversion, text="activate energy max = ").pack(pady=5)
-        valor_inicio_y = tk.DoubleVar(value=380)
-        spinbox_rango = tk.Spinbox(ventana_isoconversion, from_=250.05, to=500, 
-                                increment=0.5, state="readonly", 
-                                textvariable=valor_inicio_y,font=fuente,fg="black")
-        spinbox_rango.pack(pady=5)
-
-        tk.Label(ventana_isoconversion, text="percentile = ").pack(pady=5)
-        valor_inicio_p = tk.DoubleVar(value=0.80)
-        spinbox_rango = tk.Spinbox(ventana_isoconversion, from_= 0, to= 1, 
-                                increment=0.005, state="readonly", 
-                                textvariable=valor_inicio_p,font=fuente,fg="black")
-        spinbox_rango.pack(pady=5)
-
+         #ttk.Label(ventana_isoconversion, text="Activate Energy Max = ", font=("", 10, "bold"), bootstyle="darkly").pack(pady=(10, 2))
+         ttk.Label(ventana_isoconversion, text="Activate Energy Max = ", font=("", 10, "bold")).pack(pady=(10, 2))         
+         valor_inicio_y = tk.DoubleVar(value=380)
+         
+         spinbox_max = ttk.Spinbox(
+             ventana_isoconversion, 
+             from_=250.05, 
+             to=500, 
+             increment=0.5, 
+             state="readonly", 
+             textvariable=valor_inicio_y,
+             font=fuente,
+             width=20
+         )
+         spinbox_max.pack(pady=5, fill="x")
         
-       
-        # --- save data ---
-        def guardar_y_cerrar():
-            
-            self.x = valor_inicio_x.get()
-            self.y = valor_inicio_y.get()
-            self.p1 = valor_inicio_p.get()
-            ventana_isoconversion.destroy()
+         #ttk.Label(ventana_isoconversion, text="Percentile = ", font=("", 10, "bold"), bootstyle="darkly").pack(pady=(10, 2))
+         ttk.Label(ventana_isoconversion, text="Percentile = ", font=("", 10, "bold")).pack(pady=(10, 2))
+         valor_inicio_p = tk.DoubleVar(value=0.80)
+         
+         spinbox_p = ttk.Spinbox(
+             ventana_isoconversion, 
+             from_=0, 
+             to=1, 
+             increment=0.005, 
+             state="readonly", 
+             textvariable=valor_inicio_p,
+             font=fuente,
+             width=20
+         )
+         spinbox_p.pack(pady=5, fill="x")
+        
+         def guardar_y_cerrar():
+             self.x = valor_inicio_x.get()
+             self.y = valor_inicio_y.get()
+             self.p1 = valor_inicio_p.get()
+             ventana_isoconversion.destroy()
+        
 
-        # --- button ok ---
-        button_algo = tk.Button(ventana_isoconversion, text="OK", command=guardar_y_cerrar)
-        button_algo.pack(side=tk.BOTTOM, pady=20)
-        ventana_padre.wait_window(ventana_isoconversion)
+         button_algo = ttk.Button(
+             ventana_isoconversion, 
+             text="OK", 
+             command=guardar_y_cerrar,
+             bootstyle="primary",
+             cursor="hand2"
+         )
+         button_algo.pack(side=tk.BOTTOM, fill="x", pady=(20, 0))
+         
+         ventana_padre.wait_window(ventana_isoconversion)
+
     
     
     def function_input_vyazovkin_method(self,ventana_padre):
-        """
-        In this function, the user defines the minimum and
-        maximum activation energy for the Vyazovkin method.
-        """
-        ventana_isoconversion = tk.Toplevel(ventana_padre)
-        ventana_isoconversion.title("enter data")
-        ventana_isoconversion.geometry("400x450")
-        fuente = ("Helvetica", 12, "bold")
-       
-        ventana_isoconversion.resizable(False, False)
-
-        tk.Label(ventana_isoconversion, text="activate energy min = ").pack(pady=5)
-        valor_inicio_x = tk.DoubleVar(value=5)
-        spinbox_rango = tk.Spinbox(ventana_isoconversion, from_=0, to=250, 
-                                increment=0.5, state="readonly", 
-                                textvariable=valor_inicio_x,font=fuente,fg="black")
-        spinbox_rango.pack(pady=5)
-
-        tk.Label(ventana_isoconversion, text="activate energy max = ").pack(pady=5)
-        valor_inicio_y = tk.DoubleVar(value=380)
-        spinbox_rango = tk.Spinbox(ventana_isoconversion, from_=250.05, to=500, 
-                                increment=0.5, state="readonly", 
-                                textvariable=valor_inicio_y,font=fuente,fg="black")
-        spinbox_rango.pack(pady=5)
-
-      
+         """
+         In this function, the user defines the minimum and
+         maximum activation energy for the Vyazovkin method.
+         """
+         ventana_isoconversion = ttk.Toplevel(ventana_padre)
+         ventana_isoconversion.title("Enter data")
+         ventana_isoconversion.geometry("400x320")
+         ventana_isoconversion.resizable(False, False)
+         ventana_isoconversion.configure(padx=20, pady=20)
+         
+         fuente = ("", 12, "bold")
         
+         #ttk.Label(ventana_isoconversion, text="Activate Energy Min = ", font=("", 10, "bold"), bootstyle="darkly").pack(pady=(5, 2))
+         ttk.Label(ventana_isoconversion, text="Activate Energy Min = ", font=("", 10, "bold")).pack(pady=(5, 2))
+         valor_inicio_x = tk.DoubleVar(value=5)
+         
+         spinbox_min = ttk.Spinbox(
+             ventana_isoconversion, 
+             from_=0, 
+             to=250, 
+             increment=0.5, 
+             state="readonly", 
+             textvariable=valor_inicio_x,
+             font=fuente,
+             width=20
+         )
+         spinbox_min.pack(pady=5, fill="x")
         
-       
-        # --- save data ---
-        def guardar_y_cerrar():
-            
-            self.x = valor_inicio_x.get()
-            self.y = valor_inicio_y.get()
-            ventana_isoconversion.destroy()
+         #ttk.Label(ventana_isoconversion, text="Activate Energy Max = ", font=("", 10, "bold"), bootstyle="darkly").pack(pady=(10, 2))
+         ttk.Label(ventana_isoconversion, text="Activate Energy Max = ", font=("", 10, "bold")).pack(pady=(10, 2))
+         valor_inicio_y = tk.DoubleVar(value=380)
+         
+         spinbox_max = ttk.Spinbox(
+             ventana_isoconversion, 
+             from_=250.05, 
+             to=500, 
+             increment=0.5, 
+             state="readonly", 
+             textvariable=valor_inicio_y,
+             font=fuente,
+             width=20
+         )
+         spinbox_max.pack(pady=5, fill="x")
+        
+         def guardar_y_cerrar():
+             self.x = valor_inicio_x.get()
+             self.y = valor_inicio_y.get()
+             ventana_isoconversion.destroy()
+        
+         button_algo = ttk.Button(
+             ventana_isoconversion, 
+             text="OK", 
+             command=guardar_y_cerrar,
+             bootstyle="primary",
+             cursor="hand2"
+         )
+         button_algo.pack(side=tk.BOTTOM, fill="x", pady=(20, 0))
+         
+         ventana_padre.wait_window(ventana_isoconversion)
 
-        # --- button ok ---
-        button_algo = tk.Button(ventana_isoconversion, text="OK", command=guardar_y_cerrar)
-        button_algo.pack(side=tk.BOTTOM, pady=20)
-        ventana_padre.wait_window(ventana_isoconversion)
     
     def methods_menu(self):
         """ 
@@ -1210,133 +1462,125 @@ class Aplicacion(tk.Tk):
             messagebox.showinfo("delta", "input value delta, please")
         else:
             
-            top = tk.Toplevel(self.frame_contenedor)
-            top.title("Select options")
-            top.geometry("300x450")
-            top.configure(padx=20, pady=20)
-        
-            color_sistema = self.frame_contenedor.cget("bg") 
-            nombres = ["Friedman", "Kissinger-Akahira-Sunose", "Flynn-Wall-Ozawa", "Advance-Vyazovkin", "Vyazovkin"]
-            vars_opciones = [tk.IntVar(value=0) for _ in range(5)]
-            botones_lista = []
-            self.nombres_aux=[]
-        
-            def toggle_boton(idx):
-                if vars_opciones[idx].get() == 0:
-                    vars_opciones[idx].set(1)
-                    botones_lista[idx].config(bg="#4CAF50", fg="white")
-                else:
-                    vars_opciones[idx].set(0)
-                    botones_lista[idx].config(bg=color_sistema, fg="black")
-        
-            tk.Label(top, text="click to mark:", font=("Arial", 11, "bold")).pack(pady=10)
-            
-            for i in range(5):
-                btn = tk.Button(top, 
-                                text=nombres[i].upper(), 
-                                font=("Arial", 10),
-                                width=30,
-                                pady=8,
-                                cursor="hand2")
-                btn.config(command=lambda i=i: toggle_boton(i))
-                btn.pack(pady=5)
-                botones_lista.append(btn)
-            
-            tk.Button(top, text="OK", command=top.destroy, 
-                      bg="#333333", fg="white", font=("Arial", 10, "bold"), pady=10).pack(fill="x", pady=20)
-        
-            self.frame_contenedor.wait_window(top)
-            n = [v.get() for v in vars_opciones]
-            
-            # if you press 4 or 4 and 5, the advance vyazovkin window appears. If you press 5 but not 4, the 5 vyazovkin window appears.
-            
-            if n[3] == 1: 
-                self.function_input_advanced_vyazovkin_method(self.frame_contenedor) 
-            elif n[4] == 1: 
-                self.function_input_vyazovkin_method(self.frame_contenedor)
-        
-            
-            try:
-               
-                self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1)
-                self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)   
-               
-                
-                if n[0] == 1:
-                    self.ace.Fr()
-                    self.nombres_aux.append("Friedman")
-                    
-                if n[1] == 1:
-                    self.ace.KAS()
-                    self.nombres_aux.append("Kissinger-Akahira-Sunose")
-                         
-                if n[2] == 1:
-                    self.ace.OFW()
-                    self.nombres_aux.append("Flynn-Wall-Ozawa")
-                
-                if n[3] == 1:
-                    
-                    ventana_espera = tk.Toplevel(self.frame_contenedor)
-                    ventana_espera.title("Please wait")
-                    ventana_espera.geometry("250x100")
-                    ventana_espera.resizable(False, False)
-                    
-                    # keeps the window facing forward
-                    ventana_espera.attributes("-topmost", True)
-                    
-                    # calculated
-                    label_espera = tk.Label(ventana_espera, text="Calculated...", font=("Arial", 12, "bold"))
-                    label_espera.pack(pady=35)
-                    
-                    ventana_espera.update()
-                    
-                    try:
-                
-                        self.ace.aVy((self.x, self.y), var='time', p=self.p1)
-                        self.nombres_aux.append("Advance-Vyazovkin")
-                       
-                        
-                    finally:
-                        
-                        ventana_espera.destroy()
-                        
-                        
-               
-                    
-                if n[4] == 1:
-                    ventana_espera = tk.Toplevel(self.frame_contenedor)
-                    ventana_espera.title("Please wait")
-                    ventana_espera.geometry("250x100")
-                    ventana_espera.resizable(False, False)
-                    
-                    ventana_espera.attributes("-topmost", True)
-                    
-                    label_espera = tk.Label(ventana_espera, text="calculated...", font=("Arial", 12, "bold"))
-                    label_espera.pack(pady=35)
-                    
-                    ventana_espera.update()
-                    
-                    try:
-                        self.ace.Vy((self.x, self.y),method='senum-yang')
-                        self.nombres_aux.append("Vyazovkin")
-                     
-                        
-                    finally:
-                        ventana_espera.destroy()
-                        
-                    
-                    
-                
-                self.fig = self.ace.Ea_plot()
-                self.draw_fig()
-                
-                
+             top = ttk.Toplevel(self.frame_contenedor)
+             top.title("Select options")
+             top.geometry("320x480") 
+             
+             top.configure(padx=20, pady=20) 
+             
+             nombres = ["Friedman", "Kissinger-Akahira-Sunose", "Flynn-Wall-Ozawa", "Advance-Vyazovkin", "Vyazovkin"]
+             vars_opciones = [tk.IntVar(value=0) for _ in range(5)]
+             botones_lista = []
+             self.nombres_aux = []
+         
+             def toggle_boton(idx):
+                 if vars_opciones[idx].get() == 0:
+                     vars_opciones[idx].set(1)
+                     # green bootstrap select
+                     botones_lista[idx].config(bootstyle="success")
+                 else:
+                     vars_opciones[idx].set(0)
+                     # gray bootstrap not select
+                     botones_lista[idx].config(bootstyle="secondary")
+         
+             #ttk.Label(top, text="Click to mark:", font=("", 11, "bold"), bootstyle="darkly").pack(pady=10)
+             ttk.Label(top, text="Click to mark:", font=("", 11, "bold")).pack(pady=10)
+         
+             for i in range(5):
+                 btn = ttk.Button(
+                     top, 
+                     text=nombres[i].upper(), 
+                     width=28,
+                     bootstyle="secondary",
+                     cursor="hand2"
+                 )
+                 btn.config(command=lambda i=i: toggle_boton(i))
+                 btn.pack(pady=6)
+                 botones_lista.append(btn)
+         
+             ttk.Button(
+                 top, 
+                 text="OK", 
+                 command=top.destroy, 
+                 bootstyle="primary",
+                 cursor="hand2"
+             ).pack(fill="x", pady=20)
+         
+             self.frame_contenedor.wait_window(top)
+             n = [v.get() for v in vars_opciones]
     
-            except Exception as e:
-                messagebox.showerror("error" ,f"unexpected error {e}")
+             if n[3] == 1: 
+                 self.function_input_advanced_vyazovkin_method(self.frame_contenedor) 
+             elif n[4] == 1: 
+                 self.function_input_vyazovkin_method(self.frame_contenedor)
+         
+             try:
+                 self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1)
+                 self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)   
             
-          
-        
+                 if n[0] == 1:
+                     self.ace.Fr()
+                     self.nombres_aux.append("Friedman")
+                     
+                 if n[1] == 1:
+                     self.ace.KAS()
+                     self.nombres_aux.append("Kissinger-Akahira-Sunose")
+                          
+                 if n[2] == 1:
+                     self.ace.OFW()
+                     self.nombres_aux.append("Flynn-Wall-Ozawa")
+                 
+                 if n[3] == 1:
+                     ventana_espera = ttk.Toplevel(self.frame_contenedor)
+                     ventana_espera.title("Please wait")
+                     ventana_espera.geometry("280x120")
+                     ventana_espera.resizable(False, False)
+                     ventana_espera.configure(padx=15, pady=15)
+                     ventana_espera.attributes("-topmost", True)
+                     
+                     #ttk.Label(ventana_espera, text="Calculating Advance-Vyazovkin...", font=("", 10, "bold"), bootstyle="darkly").pack(pady=5)
+                     ttk.Label(ventana_espera, text="Calculating Advance-Vyazovkin...", font=("", 10, "bold")).pack(pady=5)
+                     
+                     progreso = ttk.Progressbar(ventana_espera, mode="indeterminate", bootstyle="primary")
+                     progreso.pack(fill="x", pady=5)
+                     progreso.start(10)
+                     
+                     ventana_espera.update()
+                     
+                     try:
+                         self.ace.aVy((self.x, self.y), var='time', p=self.p1)
+                         self.nombres_aux.append("Advance-Vyazovkin")
+                     finally:
+                         ventana_espera.destroy()
+                         
+                 if n[4] == 1:
+                     ventana_espera = ttk.Toplevel(self.frame_contenedor)
+                     ventana_espera.title("Please wait")
+                     ventana_espera.geometry("280x120")
+                     ventana_espera.resizable(False, False)
+                     ventana_espera.configure(padx=15, pady=15)
+                     ventana_espera.attributes("-topmost", True)
+                     
+                     #ttk.Label(ventana_espera, text="Calculating Vyazovkin...", font=("", 10, "bold"), bootstyle="darkly").pack(pady=5)
+                     ttk.Label(ventana_espera, text="Calculating Vyazovkin...", font=("", 10, "bold")).pack(pady=5)
+                     progreso = ttk.Progressbar(ventana_espera, mode="indeterminate", bootstyle="info")
+                     progreso.pack(fill="x", pady=5)
+                     progreso.start(10)
+                     
+                     ventana_espera.update()
+                     
+                     try:
+                         self.ace.Vy((self.x, self.y), method='senum-yang')
+                         self.nombres_aux.append("Vyazovkin")
+                     finally:
+                         ventana_espera.destroy()
+                         
+                 self.fig = self.ace.Ea_plot()
+                 self.draw_fig()
+                 
+             except Exception as e:
+                 Messagebox.show_error(title="Error", message=f"Unexpected error: {e}")
+
     def iso_vy(self):
         """shows the graph of the vyazovkin method"""
         try:
@@ -1419,101 +1663,105 @@ class Aplicacion(tk.Tk):
         elif self.d_a1==0:
             messagebox.showinfo("delta", "input value delta, please")
         else:
-        
-            ventana_isoconversion = tk.Toplevel(self)
+            
+            ventana_isoconversion = ttk.Toplevel(self)
             ventana_isoconversion.title("Enter data")
-            ventana_isoconversion.geometry("400x450")
+            ventana_isoconversion.geometry("400x320")
             ventana_isoconversion.resizable(False, False)
-    
-            # --- method---
-            tk.Label(ventana_isoconversion, text="Method:").pack(pady=5)
-            
-            cinco_metodos =self.nombres_aux
-            
-            #cinco_metodos = ["aVy", "Vy", "Fr", "KAS", "OFW"]
+            ventana_isoconversion.configure(padx=20, pady=20)
+      
+            #ttk.Label(ventana_isoconversion, text="Method:", font=("", 11, "bold"), bootstyle="darkly").pack(pady=5)
+            ttk.Label(ventana_isoconversion, text="Method:", font=("", 11, "bold")).pack(pady=5)          
+            cinco_metodos = self.nombres_aux
+          
+            if not cinco_metodos:
+                cinco_metodos = ["No methods selected"]
+          
             combo_methods = ttk.Combobox(ventana_isoconversion, values=cinco_metodos, state="readonly")
-            combo_methods.set(self.nombres_aux[0]) # default value
-            combo_methods.pack(pady=5)
-            
-            self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1) # create variable with this default value
+            combo_methods.set(cinco_metodos[0])
+            combo_methods.pack(pady=10, fill="x")
+          
+            self.isoTables = self.xtr.Isoconversion(d_a=self.d_a1) 
             self.ace = pnk.ActivationEnergy(self.Beta, self.T0, self.isoTables)
-           
-            
+         
             def guardar_y_cerrar():
-                
-                self.methods=combo_methods.get()
+                self.methods = combo_methods.get()
+              
+                # validation
+                if self.methods == "No methods selected":
+                    Messagebox.show_warning(title="Warning", message="You must choose a method in the previous process")
+                    ventana_isoconversion.destroy()
+                    return
     
-                if self.methods=="Advance-Vyazovkin":
-                    
-                    # 1. Crear la ventana emergente de "Calculando"
-                    ventana_espera = tk.Toplevel(self.frame_contenedor)
+                if self.methods == "Advance-Vyazovkin":
+
+                    ventana_espera = ttk.Toplevel(self.frame_contenedor)
                     ventana_espera.title("Please wait")
-                    ventana_espera.geometry("250x100")
+                    ventana_espera.geometry("280x120")
                     ventana_espera.resizable(False, False)
-                    
-                    # Mantiene la ventana siempre al frente
+                    ventana_espera.configure(padx=15, pady=15)
                     ventana_espera.attributes("-topmost", True)
-                    
-                    # Texto de aviso
-                    label_espera = tk.Label(ventana_espera, text="calculated...", font=("Arial", 12, "bold"))
-                    label_espera.pack(pady=35)
-                    
-                    # [CRUCIAL] Fuerza a Tkinter a dibujar la ventana emergente antes de congelarse
-                    ventana_espera.update()
-                    
+                  
+                    #ttk.Label(ventana_espera, text="Calculating...", font=("", 12, "bold"), bootstyle="darkly").pack(pady=10)
+                    ttk.Label(ventana_espera, text="Calculating...", font=("", 12, "bold")).pack(pady=10)
+                    progreso = ttk.Progressbar(ventana_espera, mode="indeterminate", bootstyle="primary")
+                    progreso.pack(fill="x", pady=5)
+                    progreso.start(10) # animation start
+                  
+                    ventana_espera.update() # force draw
+                  
                     try:
-                        # 2. PROCESO PESADO (Simulado con sleep)
-                        self.method_used =self.ace.aVy((self.x, self.y), var='time', p=self.p1)  #opcion para escojer metodo  de los cinco
-                      
-                        
-                    finally:
-                        # 3. Destruir la ventana emergente automáticamente al terminar
-                        ventana_espera.destroy()
-                        
-                
-                
-                elif self.methods=="Vyazovkin":
-                    
-                    
-                    ventana_espera = tk.Toplevel(self.frame_contenedor)
-                    ventana_espera.title("Please wait")
-                    ventana_espera.geometry("250x100")
-                    ventana_espera.resizable(False, False)
-                    
-                    ventana_espera.attributes("-topmost", True)
-                    
-                    label_espera = tk.Label(ventana_espera, text="calculated...", font=("Arial", 12, "bold"))
-                    label_espera.pack(pady=35)
-                    
-                    ventana_espera.update()
-                    
-                    try:
-                        self.method_used=  self.ace.Vy((self.x, self.y),method='senum-yang')
-                      
-                        
+                        self.method_used = self.ace.aVy((self.x, self.y), var='time', p=self.p1)
                     finally:
                         ventana_espera.destroy()
-                    
-                    
+                      
+                elif self.methods == "Vyazovkin":
+                    ventana_espera = ttk.Toplevel(self.frame_contenedor)
+                    ventana_espera.title("Please wait")
+                    ventana_espera.geometry("280x120")
+                    ventana_espera.resizable(False, False)
+                    ventana_espera.configure(padx=15, pady=15)
+                    ventana_espera.attributes("-topmost", True)
                   
-                elif self.methods=="Friedman":
-                    self.method_used=  self.ace.Fr() 
+                    #ttk.Label(ventana_espera, text="Calculating...", font=("", 12, "bold"), bootstyle="darkly").pack(pady=10)
+                    ttk.Label(ventana_espera, text="Calculating...", font=("", 12, "bold")).pack(pady=10)
+                    progreso = ttk.Progressbar(ventana_espera, mode="indeterminate", bootstyle="info")
+                    progreso.pack(fill="x", pady=5)
+                    progreso.start(10)
                   
-                elif self.methods=="Kissinger-Akahira-Sunose":
-                    self.method_used= self.ace.KAS()
-                   
-                elif self.methods=="Flynn-Wall-Ozawa":
-                    self.method_used= self.ace.OFW()
+                    ventana_espera.update()
                   
+                    try:
+                        self.method_used = self.ace.Vy((self.x, self.y), method='senum-yang')
+                    finally:
+                        ventana_espera.destroy()
+                  
+                elif self.methods == "Friedman":
+                    self.method_used = self.ace.Fr() 
+                
+                elif self.methods == "Kissinger-Akahira-Sunose":
+                    self.method_used = self.ace.KAS()
+                 
+                elif self.methods == "Flynn-Wall-Ozawa":
+                    self.method_used = self.ace.OFW()
+                
                 else:
-                    messagebox.showinfo("info","You must choose a method in the previous process")
+                    Messagebox.show_info(title="Info", message="You must choose a method in the previous process")
+              
                 ventana_isoconversion.destroy()
     
-            # --- button ok ---
-            button_algo = tk.Button(ventana_isoconversion, text="OK", command=guardar_y_cerrar)
-            button_algo.pack(side=tk.BOTTOM, pady=20)
-            self.menu_start=1
-            
+            # button ok
+            button_algo = ttk.Button(
+                ventana_isoconversion, 
+                text="OK", 
+                command=guardar_y_cerrar, 
+                bootstyle="primary",
+                cursor="hand2"
+            )
+            button_algo.pack(side=tk.BOTTOM, fill="x", pady=(20, 0))
+            self.menu_start = 1
+    
+                
 
     def input_date_compensation(self):
         """ 
@@ -1534,63 +1782,70 @@ class Aplicacion(tk.Tk):
             messagebox.showinfo("isoconversion", "choose method isoconversion, please")
         
         else:
-
-            fuente = ("Helvetica", 12, "bold")
+            fuente = ("", 12, "bold")
             
-            ventana_compensation = tk.Toplevel(self)
+            # extend darkly
+            ventana_compensation = ttk.Toplevel(self)
             ventana_compensation.title("Enter data")
-            ventana_compensation.geometry("400x450")
+            ventana_compensation.geometry("400x380")
             ventana_compensation.resizable(False, False)
-    
+            ventana_compensation.configure(padx=20, pady=20)
+        
             # --- d_a ---
             opciones_beta = []
             for i in range(self.numero_de_archivos):
                 texto = f"Beta {i} = {self.Beta[i]:.1f}"
                 opciones_beta.append(texto)
             
-            # use StringVar because the Spinbox now contains text (Beta 0 = ...)
+            # use StringVar because the Spinbox now contains text (beta 0 = ...)
             valor_texto = tk.StringVar(value=opciones_beta[0])
             
-            tk.Label(ventana_compensation, text="Select Beta:").pack(pady=5)
+            #ttk.Label(ventana_compensation, text="Select Beta:", font=("", 11, "bold"), bootstyle="darkly").pack(pady=5)
+            ttk.Label(ventana_compensation, text="Select Beta:", font=("", 11, "bold")).pack(pady=5)
             
-            spinbox_rango = tk.Spinbox(
+            # ttk spinbox
+            spinbox_rango = ttk.Spinbox(
                 ventana_compensation, 
                 values=opciones_beta, 
                 state="readonly", 
                 textvariable=valor_texto,
                 font=fuente,
-                fg="black",
-                width=20
+                width=22
             )
-            spinbox_rango.pack(pady=5)
-    
+            spinbox_rango.pack(pady=10, fill="x")
+        
             # --- select model ---
-            tk.Label(ventana_compensation, text="select model = ").pack(pady=5)
+            #ttk.Label(ventana_compensation, text="Select Model:", font=("", 11, "bold"), bootstyle="darkly").pack(pady=5)
+            ttk.Label(ventana_compensation, text="Select Model:", font=("", 11, "bold")).pack(pady=5)
             options = ["r_Lin", "r_NL", "mse_NL"]
+            
+            # Combobox extends ttkbootstrap
             combo_options = ttk.Combobox(ventana_compensation, values=options, state="readonly")
             combo_options.set("r_Lin") # default value
-            combo_options.pack(pady=5)
-    
+            combo_options.pack(pady=10, fill="x")
+        
             def actualizar_visibilidad(event=None):
                 pass
             
             combo_options.bind("<<ComboboxSelected>>", actualizar_visibilidad)
             actualizar_visibilidad() # initial run
-    
-    
+        
             # --- save data ---
             def guardar_y_cerrar():
-                
                 self.compensation_inicio = opciones_beta.index(valor_texto.get())
-                self.compensation_error= combo_options.get()
-                
+                self.compensation_error = combo_options.get()
                 ventana_compensation.destroy()
-    
-            # --- button ok ---
-            button_algo = tk.Button(ventana_compensation, text="OK", command=guardar_y_cerrar)
-            button_algo.pack(side=tk.BOTTOM, pady=20)
-            
         
+            # --- button ok ---
+            button_algo = ttk.Button(
+                ventana_compensation, 
+                text="OK", 
+                command=guardar_y_cerrar,
+                bootstyle="primary",
+                cursor="hand2"
+            )
+            button_algo.pack(side=tk.BOTTOM, fill="x", pady=(20, 0))
+
     
     def ver_compensation_alpha(self):
         """
@@ -1863,8 +2118,8 @@ class Aplicacion(tk.Tk):
                 alpha = self.method_used[0]
         
                 rep_text = ""
-                rep_text += "Compensation report\n"
-                rep_text += "Compensation parameters:\n\n"
+                rep_text += "Summary Compensation Report\n"
+                rep_text += "Compensation parameters:\n"
                 rep_text += f"slope (a) : {a}\n"
                 rep_text += f"Error a : {errora}\n"
                 rep_text += f"Interception (b): {b}\n"
@@ -1886,7 +2141,7 @@ class Aplicacion(tk.Tk):
                 rep_text += f"alpha shape : {np.shape(alpha)}\n"
                 rep_text += f"ln_A shape  : {np.shape(ln_A)}\n"
                 rep_text += f"error shape : {np.shape(errorlnA)}\n"
-                rep_text += "\n"
+                rep_text += "\n" + "="*50 + "\n"
         
                 # text view
                 self.fig = Figure(figsize=(7, 8), dpi=100)
@@ -1897,13 +2152,13 @@ class Aplicacion(tk.Tk):
         
                 # text position
                 ax.text(
-                    0.02, 0.98, 
+                    0.01, 0.99, 
                     rep_text, 
-                    fontsize=9, 
-                    family='monospace', # Obligatorio para que los caracteres ocupen el mismo ancho
+                    fontsize=8, 
+                    family='monospace',
                     verticalalignment='top',
                     horizontalalignment='left',
-                    transform=ax.transAxes # Usa coordenadas relativas del eje (0 a 1)
+                    transform=ax.transAxes
                 )
         
                 self.fig.tight_layout()
@@ -1914,7 +2169,8 @@ class Aplicacion(tk.Tk):
             except Exception as e:
                 messagebox.showerror("error",f"compensation report error {e}")
 
-
+        
+         
 
     def ver_recontruction(self):
         """ 
@@ -2077,7 +2333,7 @@ class Aplicacion(tk.Tk):
                     print(f"Error: no file in: {rut_orig}")
                     return
                 
-                #Gets the actual path of Documents dynamically based on the language
+                #gets the actual path of documents dynamically based on the language
                 import subprocess
                 try:
                     resultado = subprocess.run(["xdg-user-dir", "DOCUMENTS"], capture_output=True, text=True, check=True)
