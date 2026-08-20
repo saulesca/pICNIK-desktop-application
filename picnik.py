@@ -170,13 +170,9 @@ class DataExtraction:
             DF['dw/dt'] = DF[DF.columns[0]]
             DF['dw/dt'] = dwdt_sm
             #computes the differential thermogram with a Savitzki-Golay filter                                    
-            dwdt_p = np.gradient(DF['%m'].values,
-                                 DF[DF.columns[0]].values)
             DF['dw/dt [%/min]'] = DF[DF.columns[0]]
             DF['dw/dt [%/min]'] = dwdt_p_sm
             #computes the heating rate with a Savitzki-Golay filter
-
-
             DF['dT/dt'] = DF[DF.columns[0]]
             DF['dT/dt'] = dTdt_sm
             
@@ -210,76 +206,59 @@ class DataExtraction:
             # mass% vs time
             for i in range(len(DFlis)):
                 axs[0][0].plot(DFlis[i][DFlis[0].columns[0]],
-                               DFlis[i]['%m'],
-                               lw=3,
-                               label=rf'$\beta$={Beta[i]:.1f} K/min')
+                                DFlis[i]['%m'],
+                                lw=3,
+                                label=rf'$\beta$={Beta[i]:.1f} K/min')
                 axs[0][0].legend(fontsize=10)
                 axs[0][0].set_xlabel('time [min]',fontsize=14)
                 axs[0][0].set_ylabel('TG [%]',fontsize=14)   #cambie mass por TG
             # mass loss rate vs time
             for i in range(len(DFlis)):
                 axs[0][1].plot(DFlis[i][DFlis[0].columns[0]],
-                               DFlis[i]['dw/dt [%/min]'],
-                               lw=3,
-                               label=rf'$\beta$={Beta[i]:.1f} K/min')
+                                DFlis[i]['dw/dt [%/min]'],
+                                lw=3,
+                                label=rf'$\beta$={Beta[i]:.1f} K/min')
                 axs[0][1].legend(fontsize=10)
                 axs[0][1].set_xlabel('time [min]',fontsize=14)
                 axs[0][1].set_ylabel('dw/dt [%/min]',fontsize=14)
             # heating rate vs time
             for i in range(len(DFlis)):
                 axs[0][2].plot(DFlis[i][DFlis[0].columns[0]],
-                               DFlis[i]['dT/dt'],
-                               lw=3,
-                               label=rf'$\beta$={Beta[i]:.1f} K/min')
+                                DFlis[i]['dT/dt'],
+                                lw=3,
+                                label=rf'$\beta$={Beta[i]:.1f} K/min')
                 axs[0][2].legend(fontsize=10)
                 axs[0][2].set_xlabel('time [min]',fontsize=14)
                 axs[0][2].set_ylabel('dT/dt [K/min]',fontsize=14)
             # mass% vs temperature
             for i in range(len(DFlis)):
                 axs[1][0].plot(DFlis[i]['Temperature [K]'],
-                               DFlis[i]['%m'],
-                               lw=3,
-                               label=rf'$\beta$={Beta[i]:.1f} K/min')
+                                DFlis[i]['%m'],
+                                lw=3,
+                                label=rf'$\beta$={Beta[i]:.1f} K/min')
                 axs[1][0].legend(fontsize=10)
                 axs[1][0].set_xlabel('Temperature [K]',fontsize=14)
                 axs[1][0].set_ylabel('TG [%]',fontsize=14)  #  cambie mass por TG
             # mass loss rate vs temperature
             for i in range(len(DFlis)):
                 axs[1][1].plot(DFlis[i]['Temperature [K]'],
-                               DFlis[i]['dw/dt [%/min]'],
-                               lw=3,
-                               label=rf'$\beta$={Beta[i]:.1f} K/min')
+                                DFlis[i]['dw/dt [%/min]'],
+                                lw=3,
+                                label=rf'$\beta$={Beta[i]:.1f} K/min')
                 axs[1][1].legend(fontsize=10)
                 axs[1][1].set_xlabel('Temperature [K]',fontsize=14)
                 axs[1][1].set_ylabel('dw/dt [%/min]',fontsize=14)
             # heating rate vs temperature
             for i in range(len(DFlis)):
                 axs[1][2].plot(DFlis[i]['Temperature [K]'],
-                               DFlis[i]['dT/dt'],
-                               lw=3,
-                               label=rf'$\beta$={Beta[i]:.1f} K/min')
+                                DFlis[i]['dT/dt'],
+                                lw=3,
+                                label=rf'$\beta$={Beta[i]:.1f} K/min')
                 axs[1][2].legend(fontsize=10)
                 axs[1][2].set_xlabel('Temperature [K]',fontsize=14)
                 axs[1][2].set_ylabel('dT/dt [K/min]',fontsize=14)
-                
-            #plt.show()
-        else: pass
-        """
-        print("-----aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa------")
-        print(DFlis[0].info())
-        print("-----aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa------")
-        print(DFlis[0].head(7))
-        print(DFlis[0].columns)
-        print(DFlis[0]["T (C)"])
-        print("-----------")
-        print(DFlis[0]["T (C)"].max())
-        print(DFlis[0].iloc[:,1].max())
-        print(DFlis[0].iloc[:,4].max)
-        
-        print("-----------")
-        
-        print("-----aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa------")
-        """    
+        #plt.show()
+        else: pass   
         return fig ,self.Beta, self.T0,self.DFlis 
 #-----------------------------------------------------------------------------------------------------------
     def plot_data(self,x_data='time',y_data='TG',x_units='min',y_units='%'):
@@ -482,9 +461,10 @@ class DataExtraction:
         da_dt = self.da_dt
         Beta  = self.Beta
         
-        TempAdvIsoDF = self.TempAdvIsoDF   
-        timeAdvIsoDF = self.timeAdvIsoDF
-        diffAdvIsoDF = self.diffAdvIsoDF  
+        TempAdvIsoDF = pd.DataFrame()  
+        timeAdvIsoDF = pd.DataFrame()
+        diffAdvIsoDF = pd.DataFrame() 
+
         print(f'Creating Isoconversion DataFrames...')
         
         adv_alps = np.arange(alpha[-1][0],alpha[-1][-1],d_a)
@@ -654,14 +634,16 @@ class DataExtraction:
         Returns:       A matplotlib figure plotting conversion vs temperature for
                        each heating rate in attribute Beta.
         """
+        fig, ax1 = plt.subplots(figsize=(12,9))
         for i in range(len(self.DFlis)):
-            plt.plot(self.T[i],
-                     self.alpha[i],
-                     label=str(np.round(self.Beta[i],decimals=1))+' K/min')
-            plt.xlabel('T [K]')
-            plt.ylabel(r'$\alpha$')
-            plt.legend()
-        return plt.show()
+            ax1.plot(self.T[i],
+                  self.alpha[i],
+                  label=str(np.round(self.Beta[i],decimals=1))+' K/min')
+        ax1.set_xlabel('T [K]')
+        ax1.set_ylabel(r'$\alpha$')
+        ax1.legend()
+        plt.show()
+        return fig
 #-----------------------------------------------------------------------------------------------------------
     def get_dadtvsT_plot(self):
         """
@@ -672,14 +654,16 @@ class DataExtraction:
         Returns:       A matplotlib figure plotting conversion rate vs temperature 
                        for each heating rate in attribute Beta.
         """
+        fig, ax1 = plt.subplots(figsize=(12,9))
         for i in range(len(self.DFlis)):
-            plt.plot(self.T[i],
-                     self.da_dt[i],
-                     label=str(np.round(self.Beta[i],decimals=1))+' K/min')
-            plt.xlabel('T [K]')
-            plt.ylabel(r'$\text{d}\alpha/\text{d}t [min$^{-1}]$')
-            plt.legend()
-        return plt.show()
+            ax1.plot(self.T[i],
+                  self.da_dt[i],
+                  label=str(np.round(self.Beta[i],decimals=1))+' K/min')
+        ax1.xlabel('T [K]')
+        ax1.ylabel(r'$\text{d}\alpha/\text{d}t [min$^{-1}]$')
+        ax1.legend()
+        plt.show()
+        return fig
 #-----------------------------------------------------------------------------------------------------------
     def get_avst_plot(self):
         """
@@ -690,14 +674,16 @@ class DataExtraction:
         Returns:       A matplotlib figure plotting conversion vs time for each 
                        heating rate in attribute Beta.
         """
+        fig, ax1 = plt.subplots(figsize=(12,9))
         for i in range(len(self.DFlis)):
-            plt.plot(self.t[i],
-                     self.alpha[i],
-                     label=str(np.round(self.Beta[i],decimals=1))+' K/min')
-            plt.xlabel(self.DFlis[i].columns[0])
-            plt.ylabel(self.DFlis[i].columns[1])
-            plt.legend()
-        return plt.show()
+            ax1.plot(self.t[i],
+                  self.alpha[i],
+                  label=str(np.round(self.Beta[i],decimals=1))+' K/min')
+        ax1.xlabel(self.DFlis[i].columns[0])
+        ax1.ylabel(self.DFlis[i].columns[1])
+        ax1.legend()
+        plt.show()
+        return fig
 #-----------------------------------------------------------------------------------------------------------
     def get_dadtvst_plot(self):
         """
@@ -708,14 +694,16 @@ class DataExtraction:
         Returns:       A matplotlib figure plotting conversion rate vs time for 
                        each heating rate in attribute Beta.
         """
+        fig, ax1 = plt.subplots(figsize=(12,9))
         for i in range(len(self.DFlis)):
-            plt.plot(self.t[i],
-                     self.da_dt[i],
-                     label=str(np.round(self.Beta[i],decimals=1))+' K/min')
-            plt.xlabel(self.DFlis[i].columns[0])
-            plt.ylabel(r'$\alpha$')
-            plt.legend()
-        return plt.show()
+            ax1.plot(self.t[i],
+                  self.da_dt[i],
+                  label=str(np.round(self.Beta[i],decimals=1))+' K/min')
+        ax1.xlabel(self.DFlis[i].columns[0])
+        ax1.ylabel(r'$\alpha$')
+        ax1.legend()
+        plt.show()
+        return fig
 #-----------------------------------------------------------------------------------------------------------
 class ActivationEnergy:
     """
@@ -753,14 +741,15 @@ class ActivationEnergy:
         self.timeAdvIsoDF = IsoTables[1]     #Isoconversional DataFrame of time
         self.diffAdvIsoDF = IsoTables[2]     #Isoconversional DataFrames of conversion rates
         self.T0           = T0               #Array of initial experimental temperatures
-        self.E_Fr         = [[],[],[],[]]       #Container for the Friedmann (Fr) method results
-        self.E_OFW        = [[],[],[],[]]       #Container for the OFW method (OFW) results
-        self.E_KAS        = [[],[],[],[]]       #Container for the KAS method (KAS) results
-        self.E_Vy         = [[],[],[],[]]       #Container for the Vyazovkin method (Vy) results
-        self.E_aVy        = [[],[],[],[]]       #Container for the advanced Vyazovkin method (aVy)results
+        self.E_Fr         = []       #Container for the Friedmann (Fr) method results
+        self.E_OFW        = []       #Container for the OFW method (OFW) results
+        self.E_KAS        = []       #Container for the KAS method (KAS) results
+        self.E_Vy         = []       #Container for the Vyazovkin method (Vy) results
+        self.E_aVy        = []       #Container for the advanced Vyazovkin method (aVy)results
 
         self.R            = 0.0083144626     #Universal gas constant 0.0083144626 kJ/(mol*K)
         self.used_methods = []
+        self.accepted_models = None 
 #-----------------------------------------------------------------------------------------------------------
     def Fr(self):
         """
@@ -804,7 +793,7 @@ class ActivationEnergy:
                 E_Fr.append(E_a_i)            
                 T_Fr.append(T_prom[i])
                 Fr_b.append(LR.intercept)                            #ln[Af(a)]
-                error = -(self.R)*(LR.stderr)                        #Standard deviation of the activation energy
+                error = -self.R * LR.stderr                        #Standard deviation of the activation energy
                 E_Fr_err.append(error)
             except ValueError:
                 pass
@@ -962,12 +951,12 @@ class ActivationEnergy:
         #Value of the Arrhenius exponential for the temperature T and the energy E
         y  = np.exp(-E/(self.R*(T)))
         #Senum-Yang approximation
-        def senum_yang(E):
-            x = E/(self.R*T)
+        def senum_yang(e):
+            x = e/(self.R*T)
             num = (x**3) + (18*(x**2)) + (88*x) + (96)
             den = (x**4) + (20*(x**3)) + (120*(x**2)) +(240*x) +(120)
             s_y = ((np.exp(-x))/x)*(num/den)
-            return (E/self.R)*s_y
+            return (e/self.R)*s_y
 
         if method == 'trapezoid':
             I = integrate.trapezoid(y=[y0,y],x=[T0,T])
@@ -981,12 +970,6 @@ class ActivationEnergy:
             I_B = I/B
             return I_B
         
-        elif method == 'simpson':
-            I = integrate.simpson(y=[y0,y],x=[T0,T])
-            #Division of the integral by the heating rate to get the factor $I(E,T)/B$
-            I_B = I/B
-            return I_B
-
         elif method == 'quad':
             def Temp_int(T,E):
                 return np.exp(-E/(self. R*(T)))
@@ -1155,7 +1138,7 @@ class ActivationEnergy:
         F      = [161.4, 19.00, 9.277, 6.388, 5.050, 4.284, 3.787, 3.438, 3.179,2.978,2.687] 
         #F value for the n-1 degrees of freedom.
         #Subtracts 1 to n (len(B)) because of degrees of freedom and 1 because of python indexation
-        f      = F[len(Beta)-1-1] 
+        e      = F[len(Beta)-1-1] 
         #quadrature method from parameter "method"
         method = method
         #Psi evaluation interval
@@ -1169,7 +1152,7 @@ class ActivationEnergy:
 
         #Psi function moved towards negative values (f-1) in order 
         #to set the confidence limits such that \psy = 0 for those values
-        Psy_to_cero = (s/s_min)-f-1      
+        Psy_to_cero = (s/s_min)-e-1      
         
         #Interpolation function of \Psy vs E to find the roots
         #which are the confidence limits
@@ -1236,7 +1219,6 @@ class ActivationEnergy:
         a_Vy       = []
         T_Vy       = []
         E_Vy       = []
-        Beta       = self.Beta 
         IsoDF      = self.TempAdvIsoDF
         DF_prom    = IsoDF.mean(axis=1).values
         print(f'Vyazovkin method: Computing activation energies...')    
@@ -1280,31 +1262,50 @@ class ActivationEnergy:
 #-----------------------------------------------------------------------------------------------------------        
     def J_time(self, E, row_i, col_i,ti=None, tf=None, Beta=None, T_func=None, isothermal=False, isoT=0):
         """
-        Time integral for the Advanced Vyazovkin Treatment. Considering a linear heating rate.
+        Function to evaluate the temperature integral in time domain considering an arbitrary temperature program.
 
-        Prameters:   E       : Float object. Value for the activation energy to evaluate the 
-                               integral
+        The temperature program can be linear, defined by a heating rate, B, and an initial temperature. Or arbitrary
+        defined in an external user made function T_func
 
-                     row_i   : Index value for the row of conversion in the pandas DataFrame
-                               containing the isoconversional times for evenly spaced conversion 
-                               values.
- 
-                     col_i   : Index value for the column of heating rate in the pandas DataFrame 
-                               containing the isoconversional times for evenly spaced conversion 
-                               values.
+        Args:
+            E (float): Activation energy to evaluate the integral
+            row_i (int): Index value for the row of conversion in the picnik.ActivationEnergy.timeIsoDF DataFrame.
+            col_i (int): Index value for the column of heating rate in the picnik.ActivationEnergy.timeIsoDF DataFrame.
+            ti (float): Lower limit for the time integral.
+            tf (float): Upper limit for the time integral.
+            Beta (float): Arbitrary heating rate.
+            T_func (callable): User made temperature program.
+            isothermal (bool): If true, evaluates the temperature integral under isothermal conditions.
+                               isoT must be defined
+            isoT (float): Temperature to evaluate the time integral under isothermal conditions.
 
-        Returns:     J_t     : Float. Value of the integral obtained by a numerical integration method. 
-        """    
+        Returns:
+            float  :  Temperature integral evaluated by the trapezoid method.
+        """
 
-        def time_int(t,*args):
-            T0 = args[0]
-            B  = args[1]
-            E  = args[2]
+        def time_int(s, *args):
+            """
+            Arrhenius function without the pre-exponential factor: \exp(-\frac{E}{RT(t)})
+
+            Args:
+                s (float | list[float]):
+                *args (list[float]): List of three floats: initial temperature, heating rate, activation energy
+
+            Returns:
+
+            """
+            Temp0 : float = args[0]    # Initial temperature
+            b : float  = args[1]    # Heating rate
+            e : float  = args[2]    # Activation energy
+
+            #Condition to evaluate temperature as a linear function defined by T0 and B
+            #Or a custom function, T_func, defined externally by the user
             if T_func is None:
-                T  = T0+(B*t)   
+                T  = Temp0+(b * s)
             else:
-                T  = T_func(np.array([t]))[0]
-            return np.exp(-E/(self.R*(T)))
+                T  = T_func(np.array([s]))[0]
+
+            return np.exp(-e / (self.R * T))
        
         if tf is None:
             timeAdvIsoDF   = self.timeAdvIsoDF
@@ -1317,7 +1318,7 @@ class ActivationEnergy:
         else:
             t0 = ti
             t  = tf
-            if isothermal is False:
+            if not isothermal:
                 T0 = np.mean(self.T0)
                 B  = Beta
             else:
@@ -1361,7 +1362,6 @@ class ActivationEnergy:
             #Double sum
             omega_i = np.array([I_B[k]*((np.sum(1/(I_B)))-(1/I_B[k])) for k in range(len(Beta))])
             O = np.array(np.sum((omega_i)))
-            return O
   
         elif var == 'time':
             I_B = np.array([self.J_time(E,
@@ -1439,12 +1439,6 @@ class ActivationEnergy:
         n = len(self.Beta)*(len(self.Beta)-1)
         #Selection of the integral based on parameter "var"
         if var == 'time':
-            #lower limit 
-            inf = self.timeAdvIsoDF.index.values[row_i] 
-            #upper limit
-            sup = self.timeAdvIsoDF.index.values[row_i+1]
-            #initial temperature
-            T0  = self.T0
             #time integrals into a list comprehension        
             J = np.array([self.J_time(E, row_i, i) for i in range(len(self.Beta))])     
             #Each value to be compared with one (s-1) to compute the variance
@@ -1452,7 +1446,6 @@ class ActivationEnergy:
             #return np.sum((s-1)**2
             s = np.array([((J[i] / J)-1)**2 for i in range(len(J))])
             return np.sum(s)/n
-            
         elif var == 'Temperature':
             #lower limit
             inf = self.TempAdvIsoDF.index.values[row_i] 
@@ -1669,16 +1662,17 @@ class ActivationEnergy:
     
         return fig
 #-----------------------------------------------------------------------------------------------------------
-    def T_prom(self,TempIsoDF):
+    @staticmethod
+    def T_prom(TempIsoDF):
         """
-        Computes mean values for temperature at isoconversional values
-        in order to evaluate the dependence of the activation energy 
-        with temperature
+        Computes mean values for temperature, time or conversion rate at isoconversional values, over the working
+        heating rates.
 
-        Parameters:     TempIsoDF   :  Isoconversional DataFrame of Temperatures.
+        Args:
+            TempIsoDF (DataFrame): Isoconversional DataFrame.
 
-        Returns:        T_prom      :  Array of mean temperatures at isoconversional 
-                                       values
+        Returns:
+            list[float]: Array of mean values at isoconversion
         """
         return TempIsoDF.mean(axis=1).values
 #-----------------------------------------------------------------------------------------------------------
@@ -1839,38 +1833,49 @@ class ActivationEnergy:
         """
         Function to compute the pre-exponential factor based on the compensation effect
         which states a linear relation between E and ln(A): ln(A) = a + bE.
-        May raise give unreliable results.
-        Parameters:   E  : numpy array containing the values of activation energy.
-                      B  : float. Value of the heating rate for the dataframe index.
-                      f_alpha  : List of extra functions of models to iterate over.
-                                 By default the function will only iterate over all the functions
-                                 on the "rxn_models.py" file
-        Returns:      ln_A: numpy array containing the values of the logaritmic preexponential factor
-                      a  : the slope of the relationship between E and A
-                      b  : the intercept of the relationship between E and A
-                      Afit: the fitted values of the preexponential factor
-                      Efit: the fitted values of the activation energy
+
+        Args:
+            col (int): Column index associated to an experimental heating rate.
+            E (list[float]): Numpy array containing the values of activation energy.
+            errorE (list[float]): Numpy array containing the errors associated to E.
+            f_alpha (callable): User defined reaction model f(alpha).
+            error_m (str): Filtering method to consider a model fit as acceptable. Options are: 'mse_NL' for a mean
+                           squared error of a Non-Linear fit, 'r_NL' for the Pearson coefficient of a Non-Linear fit or
+                           'r_Lin' for the Pearson coefficient of a Linear fit.
+
+        Returns:
+            tuple[Any]:
+                tuple[0]:  ln_A(list[float]):  Numpy array containing the values of the logarithmic pre-exponential factor.
+                tuple[1]:  error_ln_A(list[float]):  Numpy array containing the errors associated to the logarithmic
+                                                     pre-exponential factor.
+                tuple[2]:  a(float):  The slope of the compensation effect between E and ln_A.
+                tuple[3]:  errora(float)  Error associated to a.
+                tuple[4]:  b(float):  The intercept of the compensation effect between E and ln_A.
+                tuple[5]:  errorb(float):  Error associated to b.
+                tuple[6]:  Afit(list[float]):  Array of pre-exponential values obtained from fitting experimental data
+                                               to reaction models.
+                tuple[7]:  Efit(list[float]):  Array of activation energy values obtained from fitting experimental data
+                                               to reaction models.
+                tuple[8]:  r_sq(list[float]):  Array of filter values of the accepted fits.
+                tuple[9]:  mod(lis[Any]):  Array of ccepted models.
         """
         Tdf = self.TempAdvIsoDF
         Ddf = self.diffAdvIsoDF
         x = Tdf[Tdf.columns[col]].values
         y = Ddf[Ddf.columns[col]].values
         alpha = Tdf.index.values
-        
-       
-    
         def fit(x, y, f_alpha, alpha, er_m=error_m):
 
             def filter_fit(funcs=f_alpha, rsq_l=0.95, rsq_u=1.05, mse_lim=0.1):
 
-                def g(xaux, A, E):
-                    return A * np.exp(-E / (self.R * xaux)) * f(alpha)
+                def g(xaux, A, e):
+                    return A * np.exp(-e / (self.R * xaux)) * func(alpha)
 
                 Afit = []
                 Efit = []
                 r_sqr = []
                 model = []
-                for f in funcs:
+                for func in funcs:
                     try:
                         # noinspection PyTupleAssignmentBalance
                         popt, pcov = curve_fit(g, x, y)
@@ -1881,11 +1886,11 @@ class ActivationEnergy:
                     ss_tot = np.sum((y - np.mean(y)) ** 2)
                     r_squared = 1 - (ss_res / ss_tot)
                     if er_m == 'r_NL':
-                        if r_squared > rsq_l and r_squared < rsq_u and popt[0] > 0:
+                        if rsq_l < r_squared < rsq_u and popt[0] > 0:
                             r_sqr += [r_squared]
                             Afit += [popt[0]]
                             Efit += [popt[1]]
-                            model += [f]
+                            model += [func]
                         else:
                             pass
                     elif er_m == 'mse_NL':
@@ -1893,11 +1898,11 @@ class ActivationEnergy:
                             r_sqr += [ss_res]
                             Afit += [popt[0]]
                             Efit += [popt[1]]
-                            model += [f]
+                            model += [func]
                         else:
                             pass
                     elif er_m == 'r_Lin':
-                        dep = np.log((1 / f(alpha)) * y)
+                        dep = np.log((1 / func(alpha)) * y)
                         ind = 1 / x
                         df = pd.DataFrame({'x': ind,
                                            'y': dep})
@@ -1905,16 +1910,16 @@ class ActivationEnergy:
                         df = df.dropna()
                         lr = linregress(df['x'].values, df['y'].values)
                         pen = lr.slope
-                        ord = lr.intercept
+                        intercept = lr.intercept
                         # print( lr.rvalue**2 )
                         if (lr.rvalue ** 2) > rsq_l:
-                            Afit += [np.exp(ord)]
+                            Afit += [np.exp(intercept)]
                             Efit += [-self.R * pen]
-                            model += [f]
+                            model += [func]
                             r_sqr += [lr.rvalue ** 2]
                         else:
                             pass
-                         
+
                 return np.array(Afit), np.array(Efit), np.array(r_sqr), model
 
             fr_l  = np.array([0.9999, 0.999, 0.99, 0.95, 0.85])
@@ -1940,7 +1945,7 @@ class ActivationEnergy:
                                 rf'Accuracy not met with precision of mse = {f_mse[k - 1]}. Lowering precision to mse = {f_mse[k]}')
                 else:
                     break
-           
+
             return Afit_t, Efit_t, r_sq_t, mod_t
 
         def regression(E, A):
@@ -1966,8 +1971,6 @@ class ActivationEnergy:
         f_a += filter(callable, list(rxn_models.__dict__.values()))
         Afit, Efit, r_sq, mod = fit(x, y, f_a, alpha, er_m=error_m)
         self.accepted_models = mod
-        
-       
         if Efit.size == 0 or Afit.size == 0:
             print('Compensation effect could not be computed for this data.')
             return None
@@ -1975,7 +1978,7 @@ class ActivationEnergy:
             a, errora, b, errorb = regression(Efit, Afit)
             ln_A = (a * E) + b
             errorlnA = np.sqrt((errora ** 2) + ((E * errorb) ** 2) + ((b * errorE) ** 2))
-           
+
             return ln_A, errorlnA, a, errora, b, errorb, np.array(Afit), np.array(Efit), r_sq, mod
 
     #---------------------------------------------------------------
@@ -2096,44 +2099,32 @@ class ActivationEnergy:
                 t_p.append(tp)
             return np.array(t_p)
 #---------------------------------------------------------------
-    def export_prediction(self, time, Temp, alpha, isothermal=False, name="prediction.csv" ):
+    @staticmethod
+    def export_prediction(time, Temp, alpha, isothermal=False, name="prediction.csv"):
         """
-        Method to export the kinetic prediction.
+        Function to export the kinetic prediction.
 
-        Parameters:     time    : Time array.
+        Args:
+            time (list[float]): Time array.
+            Temp (list[float]): Temperature array or, if the prediction is isothermal just a float with the Temperature value
+            alpha (list[float]): Conversion array.
+            isothermal (bool): If True the value of Temp is multiplied by a numpy.ones array of the necessary length.
+            name (str): File name or path in .csv format.
 
-                        Temp    : Temperature array or, if the prediction is isothermal just a float with the
-                                  Temperature value
-
-                        alpha   : Conversion array.
-                         
-                        isothermal: Bool. If True the value of Temp is multiplied by a numpy.ones array of
-                                    the necessary length.
-
-                        name    : File name in .csv format.
-
-        Returns:    None. A file will be created according to the working path or path specified in `name`.
+        Returns:
+            None. A file will be created according to the working path or path specified in `name`.
         """
-        if isothermal==True:
+        if isothermal:
             Temp = Temp*np.ones(len(time))
         predDF = pd.DataFrame({'time':time,
                                'Temperature':Temp,
                                'conversion':alpha})
-        ruta= filedialog.asksaveasfilename(
-        title="save file",
-        initialfile="prediction.csv",
-        defaultextension=".csv",
-        filetypes=[("files csv", "*.csv")]
-        )
-        
-        if ruta:
-            predDF.to_csv(ruta, index=False)
-            print(f"save file: {ruta}")
-        else:
-            print("operation cancel.")
+        predDF.to_csv(name,index=False)
 
+        return None
         
 #---------------------------------------------------------------
+    @staticmethod
     def export_kinetic_triplet(self, alpha, E, ln_A, g_a, name="kinetic_triplet.csv" ):
         """
         Method to export the kinetic prediction.
