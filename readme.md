@@ -50,6 +50,8 @@ WHAT YOU GET Specialized views: TG vs. time, DTG vs. time dT /dt vs. time, TG vs
 Action
 Click corresponding top frame buttons to switch active bottom-frame visualization.
 
+
+
 ## Temperature Limits & Conversion Setup
 
 Define lower and upper temperature boundaries for each heating rate to calculate reaction con-
@@ -62,6 +64,7 @@ Action
 Click Thermogram button at top frame and enter lower and upper
 temperatures per β, save values and then, click Conversion button.
 
+![Mi GIF](image/pICNIK_1.gif)
 
 ## Conversion Calculation
 The conversion is computed using the pICNIK library.
@@ -106,6 +109,8 @@ Action
 Click Options of activation energy, mark desired methods, click OK, then
 select the active method via Select activation energy method.
 
+![Mi GIF](image/pICNIK_2.gif)
+
 ## Compensation Effect Analysis
 Fit the kinetic compensation effect relation ln(A) = a + bE against candidate reaction models.}
 
@@ -139,4 +144,34 @@ without completing prerequisites triggers a safety message detailing the require
 image or the canvas toolbar. The application can be closed via Files → Exit or the window
 close button (X), both requiring user confirmation.
 
+![Mi GIF](image/pICNIK_3.gif)
 
+## Running the Application
+
+To run the pICNIK Desktop Edition application, download the executable from:
+
+**https://github.com/saulesca/pICNIK-desktop-application/releases/tag/v0.1-beta**
+
+Choose the version that is compatible with your operating system and click to download it. Once downloaded, follow the instructions according to your installed operating system.
+
+In the pICNIK project:
+
+**https://github.com/ErickErock/pICNIK**
+
+there are files in the examples folder that you can use to test the application.
+
+## Windows
+
+Place the file in a folder of your choice. Double-click the executable, and the application will run.
+
+## Linux
+
+Place the file in a folder of your choice. Once the file has been placed there, grant it execute permissions from a terminal opened in the folder where the executable is located by running:
+
+**chmod +x pICNIK_beta_linux_2_7** or the name of the current version.
+
+Then, from the terminal, run: **./pICNIK_beta_linux_2_7** or the name of the current version.
+
+Alternatively, after granting execute permissions, you can double-click the file, and the application will run.
+
+![Mi GIF](image/Run_pICNIK.gif)
