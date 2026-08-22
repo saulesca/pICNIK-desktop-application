@@ -15,6 +15,7 @@ import re
 import ttkbootstrap as ttk
 #from ttkbootstrap.constants import *
 from ttkbootstrap.dialogs import Messagebox
+import seaborn as sns
 
 class Aplicacion(ttk.Window):
     """
@@ -34,9 +35,9 @@ class Aplicacion(ttk.Window):
         """
         Starts the main window
         """
-        self.tema="darkly"
-        super().__init__(themename=self.tema)
-        self.title("Picnik desktop edition")
+        
+        super().__init__(themename="darkly")
+        self.title("pICNIK desktop edition")
         self.geometry("1280x720")
         self.minsize(820,600)
 
@@ -50,7 +51,7 @@ class Aplicacion(ttk.Window):
         """
         picnik support variables
         """
-        
+        self.tema="darkly"
         self.one_step=[]
         self.numero_de_archivos=0
         self.fig=None
@@ -123,7 +124,7 @@ class Aplicacion(ttk.Window):
         
         self.etiqueta = ttk.Label(
             self.frame_grafico, 
-            text="Picnik desktop edition", 
+            text="pICNIK desktop edition", 
             style="Gigante.TLabel",  # link style
             bootstyle="light"
         )
@@ -159,8 +160,8 @@ class Aplicacion(ttk.Window):
    
     
     def tema_claro(self):
-        self.style.theme_use("flatly")
         self.tema="flatly"
+        self.style.theme_use("flatly")
         
         if (self.fase_actual.get() == 1) and (  self.one_step==[]) :
             if hasattr(self, 'etiqueta') and self.etiqueta.winfo_exists():
@@ -177,8 +178,9 @@ class Aplicacion(ttk.Window):
                 self.etiqueta.config(bootstyle="dark")   
        
     def tema_oscuro(self):
-        self.style.theme_use("darkly")
         self.tema="darkly"
+        self.style.theme_use("darkly")
+    
         if (self.fase_actual.get() == 1) and (  self.one_step==[]) :
             if hasattr(self, 'etiqueta') and self.etiqueta.winfo_exists():
                 self.etiqueta.destroy()
@@ -194,8 +196,9 @@ class Aplicacion(ttk.Window):
                 self.etiqueta.config(bootstyle="light")
 
     def tema_oscuro2(self):
-        self.style.theme_use("cyborg")
         self.tema="cyborg"
+        self.style.theme_use("cyborg")
+        
         if (self.fase_actual.get() == 1) and (  self.one_step==[]) :
             if hasattr(self, 'etiqueta') and self.etiqueta.winfo_exists():
                 self.etiqueta.destroy()
@@ -371,7 +374,8 @@ class Aplicacion(ttk.Window):
         """
         reset variables
         """  
-        
+        self.style.theme_use("darkly")
+        self.tema="darkly"
         self.one_step=[]
         self.numero_de_archivos=0
         self.fig=None
@@ -434,7 +438,7 @@ class Aplicacion(ttk.Window):
                 bootstyle="dark"    
             )
             self.etiqueta.pack(expand=True) 
-        else:
+        elif self.tema == "cyborg":
             self.etiqueta = ttk.Label(
                 self.frame_grafico, 
                 text="Picnik desktop edition", 
@@ -517,12 +521,52 @@ class Aplicacion(ttk.Window):
         
             messagebox.showerror("error", f"error open files: {e}")
                 
+    def configure_tem(self):            
+        if self.tema== "darkly":
+                            sns.set_theme(
+                            style="dark", 
+                            rc={
+                            "figure.facecolor": "#FFFFFF",
+                            "axes.facecolor": "#FFFFFF",
+                            "text.color": "#000000",
+                            "axes.grid": True,               
+                            "grid.color": "#EAEAEA",
+                            "axes.edgecolor": "#000000",
+                            "grid.linewidth": 0.7
+                            }
+                            )
                 
-
+        elif self.tema=="cyborg":
+                sns.set_theme(
+                        style="dark", 
+                        rc={
+                            "figure.facecolor": "#000000",
+                            "axes.facecolor": "#000000",
+                            "text.color": "#FFFFFF",
+                            "axes.grid": True,               
+                            "grid.color": "#333333",
+                            "axes.edgecolor": "#FFFFFF",
+                            "grid.linewidth": 0.2
+                            }
+                        )
+        elif self.tema=="flatly":
+                sns.set_theme(
+                        style="dark", 
+                        rc={
+                            "figure.facecolor": "#FFFFFF",
+                            "axes.facecolor": "#FFFFFF",
+                            "text.color": "#000000",
+                            "axes.grid": True,               
+                            "grid.color": "#EAEAEA",
+                            "axes.edgecolor": "#000000",
+                            "grid.linewidth": 0.7
+                            }
+                        )
     def draw_fig(self):
         """ 
         Clean the canvas and draw the corresponding figure
         """
+        
         for widget in self.frame_grafico.winfo_children():
                     widget.destroy()
 
@@ -533,16 +577,9 @@ class Aplicacion(ttk.Window):
         # navigation toolbar
         toolbar = NavigationToolbar2Tk(self.canvas, self.frame_grafico, pack_toolbar=False)
         toolbar.update()
-        color_fondo = "#212529"       # backgroud dark
-        color_texto = "#ffffff"       # font white
         
-        toolbar.config(background=color_fondo)
-        for elemento in toolbar.winfo_children():
-            try:
-                elemento.config(background=color_fondo, foreground=color_texto)
-            except Exception:
-                # Si el elemento no acepta texto (como los separadores), solo cambia su fondo
-                elemento.config(background=color_fondo)
+        
+        
 
         # Toolbar at the bottom and chart at the top
         toolbar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -559,7 +596,7 @@ class Aplicacion(ttk.Window):
             the variables `fig`, `Beta`, `T0`, and `DFlist` are received, drawing six
             support graphs for analysis and calculations.
             """
-            
+            self.configure_tem()
             try:
                 # verification of selected files
                 if not hasattr(self, 'one_step_aux') or not self.one_step_aux:
@@ -639,6 +676,7 @@ class Aplicacion(ttk.Window):
                 else:
                     self.number_max = 0
                     self.number_min = 0
+                
                 
                 self.draw_fig()
 
@@ -733,6 +771,7 @@ class Aplicacion(ttk.Window):
         """
         generate image one time vs TG
         """
+        self.configure_tem()
         try:       
             self.fig=self.xtr.plot_data(x_data='time',y_data='TG', x_units='min', y_units='%')   
             self.draw_fig()
@@ -743,6 +782,7 @@ class Aplicacion(ttk.Window):
         """
         generate image two time vs DGT
         """
+        self.configure_tem()
         try:
             self.fig=self.xtr.plot_data(x_data='time',y_data='DTG', x_units='min', y_units='%/min')   
             self.draw_fig()
@@ -753,6 +793,7 @@ class Aplicacion(ttk.Window):
         """
         generate image three time vs dT/dt
         """
+        self.configure_tem()
         try:           
             self.fig=self.xtr.plot_data(x_data='time',y_data='dT/dt', x_units='min', y_units='K/min')   
             self.draw_fig()
@@ -763,6 +804,7 @@ class Aplicacion(ttk.Window):
         """
         generate image four temperature vs TG
         """
+        self.configure_tem()
         try:
             self.fig=self.xtr.plot_data(x_data='temperature',y_data='TG', x_units='K', y_units='%')   
             self.draw_fig()
@@ -773,6 +815,7 @@ class Aplicacion(ttk.Window):
         """
         generate image five temperature vs DTG
         """
+        self.configure_tem()
         try:            
             self.fig=self.xtr.plot_data(x_data='temperature',y_data='DTG', x_units='K', y_units='%/min')   
             self.draw_fig()
@@ -783,6 +826,7 @@ class Aplicacion(ttk.Window):
         """
         generate image six temperature vs dT/dt
         """
+        self.configure_tem()
         try:
             self.fig=self.xtr.plot_data(x_data='temperature',y_data='dT/dt', x_units='K', y_units='K/min')   
             self.draw_fig()
@@ -794,7 +838,7 @@ class Aplicacion(ttk.Window):
         The user enters initial and final temperature values that are saved in two arrays that the 
         Conversion function will need
         """
-       
+        
         if self.one_step != []:
             
             self.view_limits()
@@ -827,9 +871,7 @@ class Aplicacion(ttk.Window):
             entries_a1, entries_a2 = [], []
             vars_a1, vars_a2 = [], []
             
-            # limits
-            limite_medio_inf = int((self.number_min + self.number_max) / 2)
-            limite_medio_sup = limite_medio_inf + 1
+            
             
             def crear_fila(i):
                 fila = ttk.Frame(frame)
@@ -837,7 +879,7 @@ class Aplicacion(ttk.Window):
                 ttk.Label(fila, text=f"β {self.Beta[i].round(2)}", width=10).grid(row=0, column=0)
                 
                 
-                val_inicial_1 = int((self.number_min + ((self.number_min + self.number_max) / 2)) / 2)
+                val_inicial_1 = int(self.number_min)
                 var1 = tk.IntVar(value=val_inicial_1)
                 
                 entry1 = ttk.Entry(fila, width=5, validate="key", validatecommand=(validar, "%P"))
@@ -850,14 +892,14 @@ class Aplicacion(ttk.Window):
                     entry1.insert(0, str(v))
                     var1.set(v)
                     
-                scale1 = ttk.Scale(fila, from_=self.number_min, to=limite_medio_inf, orient="horizontal", variable=var1, command=mover_scale1)
+                scale1 = ttk.Scale(fila, from_=self.number_min, to=self.number_max, orient="horizontal", variable=var1, command=mover_scale1)
                 scale1.grid(row=0, column=1, padx=5, sticky="ew")
                 
                 def update_scale1(event):
                     t = entry1.get()
                     if t.isdigit():
                         val = int(t)
-                        if self.number_min <= val <= limite_medio_inf:
+                        if self.number_min <= val <= self.number_max:
                             var1.set(val)
                             
                 entry1.bind("<KeyRelease>", update_scale1)
@@ -875,14 +917,14 @@ class Aplicacion(ttk.Window):
                     entry2.insert(0, str(v))
                     var2.set(v)
                     
-                scale2 = ttk.Scale(fila, from_=limite_medio_sup, to=self.number_max, orient="horizontal", variable=var2, command=mover_scale2)
+                scale2 = ttk.Scale(fila, from_=self.number_min, to=self.number_max, orient="horizontal", variable=var2, command=mover_scale2)
                 scale2.grid(row=0, column=3, padx=5, sticky="ew")
                 
                 def update_scale2(event):
                     t = entry2.get()
                     if t.isdigit():
                         val = int(t)
-                        if limite_medio_sup <= val <= self.number_max:
+                        if self.number_min <= val <= self.number_max:
                             var2.set(val)
                             
                 entry2.bind("<KeyRelease>", update_scale2)
@@ -913,23 +955,28 @@ class Aplicacion(ttk.Window):
                     
                     # limit
                     v1, v2 = int(val1_str), int(val2_str)
-                    if not (self.number_min <= v1 <= limite_medio_inf):
-                        messagebox.showerror("Out of range", f"In row {i+1}, the first value ({v1}) must be between {self.number_min} and {limite_medio_inf}.")
+                    if  (v1 >= v2):
+                        messagebox.showerror("Error","The initial temperature must be lower than the final temperature.")
                         arreglo2.clear()
                         return
-                    if not (limite_medio_sup <= v2 <= self.number_max):
-                        messagebox.showerror("Out of range", f"In row {i+1}, the second value ({v2}) must be between {limite_medio_sup} and {self.number_max}.")
+                    elif  (v1 < self.number_min):
+                        messagebox.showerror("Error","The initial temperature must be higher; invalid initial temperature.")
                         arreglo2.clear()
                         return
-                    if not (v1 < v2):
-                        messagebox.showerror("Out of range", f"In row {i+1}, the second value {v2} must be strictly greater than the first value {v1}")
+                    elif  (v2 > self.number_max):
+                        messagebox.showerror("Error","The final temperature must be lower; the final temperature is invalid.")
+                        arreglo2.clear()
+                        return                        
+                    elif not (self.number_min <= v1 <= self.number_max):
+                        messagebox.showerror("Error","values out range")
                         arreglo2.clear()
                         return
-                    
+                                            
                 self.fix1_conversion = [v.get() for v in vars_a1]
                 
                 
                 self.fix2_conversion = [int(v) for v in arreglo2 if v.isdigit()]
+
                 
                 messagebox.showinfo("Saved", "All values are within range and have been saved.")
                 ventana.destroy()
@@ -941,13 +988,12 @@ class Aplicacion(ttk.Window):
         else:
             messagebox.showinfo("open files", "open files, please")
 
-         
-         
    
     def conversion(self):
         """
         the picnik conversion function is executed
         """
+        self.configure_tem()
         if self.one_step == []:
             messagebox.showinfo("open files", "open files, please")
         elif self.fix1_conversion==[]:
@@ -1065,23 +1111,7 @@ class Aplicacion(ttk.Window):
             
             # --- if it already exists, it does nothing.---
             if hasattr(self, 'menu_obj') and self.menu_obj.winfo_exists():
-                return
-        
-            """
-            self.opcion_var = tk.StringVar(self.frame_header)
-            self.opcion_var.set("temperature")
-            
-            # we disable the "save" button every time the menu option changes.
-            # the trace command detects when the user selects something new.
-            self.opcion_var.trace_add("write", lambda *args: self.btn_save.config(state="disabled"))
-        
-            self.menu_obj = tk.OptionMenu(self.frame_header, self.opcion_var, "time", "temperature", "conversion rate")
-            self.menu_obj.pack(side="left", padx=10)
-            """
-            
-            #-------------------------
-                        
-                      
+                return                      
             
             # tk extend tkinter
             self.opcion_var = tk.StringVar(self.frame_header)
@@ -1146,8 +1176,15 @@ class Aplicacion(ttk.Window):
             text_area = tk.Text(self.frame_grafico, font=("Consolas", 10), padx=10, pady=10)
             # insert text
             text_area.insert(tk.END, str(self.isoTables[0])) 
-            
-            text_area.config(state=tk.DISABLED)
+
+            if self.tema=="darkly":            
+                text_area.config(bg="#000000", fg="#ffffff", state=tk.DISABLED)
+            elif self.tema=="cyborg":            
+                            text_area.config(bg="#000000", fg="#ffffff", state=tk.DISABLED)
+            elif self.tema=="flatly":            
+                            text_area.config(bg="#ffffff", fg="#000000", state=tk.DISABLED)
+                    
+
             text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         except Exception as e:
@@ -1201,7 +1238,13 @@ class Aplicacion(ttk.Window):
             text_area = tk.Text(self.frame_grafico, font=("Consolas", 10), padx=10, pady=10)
             # insert the formatted text
             text_area.insert(tk.END, str(self.isoTables[1])) 
-            text_area.config(state=tk.DISABLED)
+            if self.tema=="darkly":            
+                text_area.config(bg="#000000", fg="#ffffff", state=tk.DISABLED)
+            elif self.tema=="cyborg":            
+                            text_area.config(bg="#000000", fg="#ffffff", state=tk.DISABLED)
+            elif self.tema=="flatly":            
+                            text_area.config(bg="#ffffff", fg="#000000", state=tk.DISABLED)
+                    
             text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         except Exception as e:
@@ -1259,7 +1302,13 @@ class Aplicacion(ttk.Window):
             text_area = tk.Text(self.frame_grafico, font=("Consolas", 10), padx=10, pady=10)
             # insert text
             text_area.insert(tk.END, str(self.isoTables[2])) 
-            text_area.config(state=tk.DISABLED)
+            if self.tema=="darkly":            
+                text_area.config(bg="#000000", fg="#ffffff", state=tk.DISABLED)
+            elif self.tema=="cyborg":            
+                            text_area.config(bg="#000000", fg="#ffffff", state=tk.DISABLED)
+            elif self.tema=="flatly":            
+                            text_area.config(bg="#ffffff", fg="#000000", state=tk.DISABLED)
+                    
             text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         except Exception as e:
             messagebox.showerror("error", f"there is no data to display {e}")
@@ -1851,7 +1900,7 @@ class Aplicacion(ttk.Window):
         """
         visualize the compensation graph ln A vs alpha
         """
-        
+        self.configure_tem()
         if self.one_step == []:
             messagebox.showinfo("open files", "open files, please")
         elif self.fix1_conversion==[]:
@@ -1913,6 +1962,7 @@ class Aplicacion(ttk.Window):
         """
         visualize the compensation graph ln A vs E
         """
+        self.configure_tem()
         if self.one_step == []:
             messagebox.showinfo("open files", "open files, please")
         elif self.fix1_conversion==[]:
@@ -1962,11 +2012,18 @@ class Aplicacion(ttk.Window):
                 # straight
                 xfit = np.linspace(min(Efit), max(Efit), 100)
                 yfit = a * xfit + b
+
+                if self.tema =="darkly":
+                    tem="#FF5F1F"
+                elif self.tema =="cyborg":
+                    tem="yellow"    
+                elif self.tema =="flatly":
+                    tem="black"    
         
                 ax.plot(
                     xfit,
                     yfit,
-                    color='black',
+                    color=tem,
                     linewidth=2
                 )
         
@@ -2081,6 +2138,7 @@ class Aplicacion(ttk.Window):
         """
         save the compensation method data
         """
+        self.configure_tem()
         if self.one_step == []:
             messagebox.showinfo("open files", "open files, please")
         elif self.fix1_conversion==[]:
@@ -2141,8 +2199,9 @@ class Aplicacion(ttk.Window):
                 rep_text += f"alpha shape : {np.shape(alpha)}\n"
                 rep_text += f"ln_A shape  : {np.shape(ln_A)}\n"
                 rep_text += f"error shape : {np.shape(errorlnA)}\n"
+                # 1. Agregar línea decorativa al reporte
                 rep_text += "\n" + "="*50 + "\n"
-        
+                        
                 # text view
                 self.fig = Figure(figsize=(7, 8), dpi=100)
                 ax = self.fig.add_subplot(111)
@@ -2155,7 +2214,6 @@ class Aplicacion(ttk.Window):
                     0.01, 0.99, 
                     rep_text, 
                     fontsize=8, 
-                    family='monospace',
                     verticalalignment='top',
                     horizontalalignment='left',
                     transform=ax.transAxes
@@ -2163,9 +2221,9 @@ class Aplicacion(ttk.Window):
         
                 self.fig.tight_layout()
                 
-    
+
                 self.draw_fig()
-                
+                ax.axis('on')
             except Exception as e:
                 messagebox.showerror("error",f"compensation report error {e}")
 
@@ -2176,7 +2234,7 @@ class Aplicacion(ttk.Window):
         """ 
         This method is called picnik reconstruction method
         """
-        
+        self.configure_tem()
         if self.one_step == []:
             messagebox.showinfo("open files", "open files, please")
         elif self.fix1_conversion==[]:
@@ -2365,3 +2423,4 @@ class Aplicacion(ttk.Window):
 if __name__ == "__main__":
     app = Aplicacion()
     app.mainloop()
+ 
